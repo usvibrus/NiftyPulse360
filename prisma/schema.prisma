@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model StockEvent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  symbol        String
+  companyName   String
+  exchange      String
+  sector        String?
+  eventType     String
+  changePercent Float
+  changeAmount  Float
+  openPrice     Float
+  closePrice    Float
+  highPrice     Float
+  lowPrice      Float
+  volume        BigInt
+  marketCap     Float?
+  newsItems     Json
+  pageContent   String
+  metaTitle     String
+  metaDesc      String
+  keywords      String[]
+  eventDate     DateTime
+  publishedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(true)
+  pageViews     Int      @default(0)
+  tweetPosted   Boolean  @default(false)
+  googleIndexed Boolean  @default(false)
+
+  @@index([symbol])
+  @@index([eventDate])
+  @@index([eventType])
+  @@index([changePercent])
+  @@index([publishedAt])
+}
+
+model IndexEvent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  indexName     String
+  indexSymbol   String
+  eventType     String
+  changePercent Float
+  changePoints  Float
+  openValue     Float
+  closeValue    Float
+  highValue     Float
+  lowValue      Float
+  newsItems     Json
+  pageContent   String
+  metaTitle     String
+  metaDesc      String
+  keywords      String[]
+  eventDate     DateTime
+  publishedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(true)
+  pageViews     Int      @default(0)
+  tweetPosted   Boolean  @default(false)
+  googleIndexed Boolean  @default(false)
+
+  @@index([indexSymbol])
+  @@index([eventDate])
+}
+
+model MetalEvent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  metal         String
+  carat         String?
+  eventType     String
+  changePercent Float
+  pricePerGram  Float
+  pricePerTola  Float?
+  pricePerOunce Float
+  newsItems     Json
+  pageContent   String
+  metaTitle     String
+  metaDesc      String
+  keywords      String[]
+  eventDate     DateTime
+  publishedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(true)
+  pageViews     Int      @default(0)
+  tweetPosted   Boolean  @default(false)
+  googleIndexed Boolean  @default(false)
+
+  @@index([metal])
+  @@index([eventDate])
+}
+
+model CommodityEvent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  commodity     String
+  eventType     String
+  changePercent Float
+  priceUSD      Float
+  priceINR      Float?
+  newsItems     Json
+  pageContent   String
+  metaTitle     String
+  metaDesc      String
+  keywords      String[]
+  eventDate     DateTime
+  publishedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(true)
+  pageViews     Int      @default(0)
+  tweetPosted   Boolean  @default(false)
+  googleIndexed Boolean  @default(false)
+
+  @@index([commodity])
+  @@index([eventDate])
+}
+
+model CurrencyEvent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  pair          String
+  eventType     String
+  changePercent Float
+  rateValue     Float
+  newsItems     Json
+  pageContent   String
+  metaTitle     String
+  metaDesc      String
+  keywords      String[]
+  eventDate     DateTime
+  publishedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(true)
+  pageViews     Int      @default(0)
+  tweetPosted   Boolean  @default(false)
+  googleIndexed Boolean  @default(false)
+
+  @@index([pair])
+  @@index([eventDate])
+}
+
+model IndexingQueue {
+  id          String    @id @default(cuid())
+  url         String    @unique
+  pageType    String
+  attempts    Int       @default(0)
+  lastAttempt DateTime?
+  success     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([success])
+}
