@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Latest gold and silver price movements in India with reasons and analysis.',
 }
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function GoldPage() {
   const events = await prisma.metalEvent.findMany({

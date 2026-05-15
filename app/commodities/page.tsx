@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Latest crude oil, natural gas and currency movements with reasons and analysis.',
 }
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function CommoditiesPage() {
   const [commodities, currencies] = await Promise.all([

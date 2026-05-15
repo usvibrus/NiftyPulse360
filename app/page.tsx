@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db/prisma'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const [stocks, indices, metals, commodities] = await Promise.all([
