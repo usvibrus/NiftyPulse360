@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { verifyCronAuth } from '@/lib/utils/cronAuth'
 import { generateMetalPages } from '@/lib/generators/pageGenerator'
+import { processIndexingQueue } from '@/lib/seo/indexingService'
+import { postNewPages } from '@/lib/seo/twitterService'
 
 export async function POST(request: Request) {
   if (!verifyCronAuth(request)) {
@@ -9,7 +11,9 @@ export async function POST(request: Request) {
 
   try {
     const result = await generateMetalPages()
-    return NextResponse.json({ success: true, ...result })
+    const indexing = await processIndexingQueue()
+    const twitter = await postNewPages()
+    return NextResponse.json({ success: true, ...result, indexing, twitter })
   } catch (error) {
     console.error('[cron/gold] Error:', error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })
