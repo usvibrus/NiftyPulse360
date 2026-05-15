@@ -5,22 +5,13 @@ import BreadCrumb from '@/components/ui/BreadCrumb'
 import StructuredData from '@/components/seo/StructuredData'
 import AdUnit from '@/components/ui/AdUnit'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const event = await prisma.indexEvent.findUnique({ where: { slug }, select: { metaTitle: true, metaDesc: true, slug: true } })
   if (!event) return { title: 'Not Found' }
   return { title: event.metaTitle, description: event.metaDesc, alternates: { canonical: `/indices/${event.slug}` } }
-}
-
-export async function generateStaticParams() {
-  try {
-    const events = await prisma.indexEvent.findMany({ where: { isPublished: true }, select: { slug: true }, take: 100 })
-    return events.map(e => ({ slug: e.slug }))
-  } catch {
-    return []
-  }
 }
 
 export default async function IndexEventPage({ params }: { params: Promise<{ slug: string }> }) {

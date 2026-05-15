@@ -5,7 +5,7 @@ import BreadCrumb from '@/components/ui/BreadCrumb'
 import StructuredData from '@/components/seo/StructuredData'
 import AdUnit from '@/components/ui/AdUnit'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -16,18 +16,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (currency) return { title: currency.metaTitle, description: currency.metaDesc, alternates: { canonical: `/commodities/${currency.slug}` } }
 
   return { title: 'Not Found' }
-}
-
-export async function generateStaticParams() {
-  try {
-    const [commodities, currencies] = await Promise.all([
-      prisma.commodityEvent.findMany({ where: { isPublished: true }, select: { slug: true }, take: 100 }),
-      prisma.currencyEvent.findMany({ where: { isPublished: true }, select: { slug: true }, take: 100 }),
-    ])
-    return [...commodities, ...currencies].map(e => ({ slug: e.slug }))
-  } catch {
-    return []
-  }
 }
 
 export default async function CommodityDetailPage({ params }: { params: Promise<{ slug: string }> }) {

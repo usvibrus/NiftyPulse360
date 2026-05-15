@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: 'Latest gold and silver price movements in India with reasons and analysis.',
 }
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export default async function GoldPage() {

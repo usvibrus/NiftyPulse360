@@ -5,7 +5,7 @@ import BreadCrumb from '@/components/ui/BreadCrumb'
 import StructuredData from '@/components/seo/StructuredData'
 import AdUnit from '@/components/ui/AdUnit'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -16,15 +16,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: event.metaDesc,
     alternates: { canonical: `/stocks/${event.slug}` },
     openGraph: { title: event.metaTitle, description: event.metaDesc, type: 'article' },
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    const events = await prisma.stockEvent.findMany({ where: { isPublished: true }, select: { slug: true }, take: 100 })
-    return events.map(e => ({ slug: e.slug }))
-  } catch {
-    return []
   }
 }
 

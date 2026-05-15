@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: 'Latest Nifty 50, Sensex, Bank Nifty movements with reasons and analysis.',
 }
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export default async function IndicesPage() {
