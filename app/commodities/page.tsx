@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: 'Latest crude oil, natural gas and currency movements with reasons and analysis.',
 }
 
-export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export default async function CommoditiesPage() {

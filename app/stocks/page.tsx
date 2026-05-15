@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: 'Latest Indian stock market movements. Find out why NSE/BSE stocks rose or fell today with news and analysis.',
 }
 
-export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export default async function StocksPage() {
