@@ -6,13 +6,34 @@ export interface NewsItem {
   url: string
   source: string
   publishedAt: string
+  publishedDate: Date
   snippet: string
 }
 
-const parser = new Parser()
+const parser = new Parser({ timeout: 8000 })
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+const HOURS_48_MS = 48 * 60 * 60 * 1000
+
+const TRUSTED_FEEDS = [
+  { source: 'Economic Times', url: 'https://economictimes.indiatimes.com/markets/stocks/rss.cms' },
+  { source: 'Moneycontrol', url: 'https://www.moneycontrol.com/rss/marketreports.xml' },
+  { source: 'Business Standard', url: 'https://www.business-standard.com/rss/markets-106.rss' },
+  { source: 'Mint', url: 'https://www.livemint.com/rss/markets' },
+  { source: 'Zerodha Pulse', url: 'https://pulse.zerodha.com/atom.xml' },
+]
+
+function timeAgo(date: Date): string {
+  const diffMs = Date.now() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 60) return `${diffMins} min ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
 }
 
 async function fetchGoogleNews(query: string): Promise<NewsItem[]> {
@@ -21,21 +42,64 @@ async function fetchGoogleNews(query: string): Promise<NewsItem[]> {
     const url = `https://news.google.com/rss/search?q=${encoded}&hl=en-IN&gl=IN&ceid=IN:en`
     const feed = await parser.parseURL(url)
 
-    return (feed.items || []).slice(0, 5).map(item => ({
-      title: item.title || '',
-      url: item.link || '',
-      source: item.creator || item.source?.name || 'Google News',
-      publishedAt: item.pubDate || new Date().toISOString(),
-      snippet: item.contentSnippet || item.content || '',
-    }))
+    const cutoff = Date.now() - HOURS_48_MS
+
+    return (feed.items || [])
+      .map(item => {
+        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date()
+        return {
+          title: item.title || '',
+          url: item.link || '',
+          source: item.creator || (item as { source?: { name?: string } }).source?.name || 'Google News',
+          publishedAt: timeAgo(pubDate),
+          publishedDate: pubDate,
+          snippet: item.contentSnippet || item.content || '',
+        }
+      })
+      .filter(item => item.publishedDate.getTime() >= cutoff)
+      .slice(0, 10)
   } catch (error) {
     console.error('[newsService] Google News RSS failed:', error)
     return []
   }
 }
 
+async function fetchTrustedFeeds(stockName: string): Promise<NewsItem[]> {
+  const results: NewsItem[] = []
+  const cutoff = Date.now() - HOURS_48_MS
+  const stockLower = stockName.toLowerCase()
+  const firstWord = stockName.split(' ')[0].toLowerCase()
+
+  for (const feed of TRUSTED_FEEDS) {
+    try {
+      const parsed = await parser.parseURL(feed.url)
+      for (const item of parsed.items || []) {
+        const titleLower = (item.title || '').toLowerCase()
+        if (!titleLower.includes(stockLower) && !titleLower.includes(firstWord)) continue
+
+        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date()
+        if (pubDate.getTime() < cutoff) continue
+
+        results.push({
+          title: item.title || '',
+          url: item.link || '',
+          source: feed.source,
+          publishedAt: timeAgo(pubDate),
+          publishedDate: pubDate,
+          snippet: item.contentSnippet || '',
+        })
+      }
+    } catch {
+      // skip this feed on failure
+    }
+  }
+
+  return results
+}
+
 async function fetchMarketaux(symbol: string): Promise<NewsItem[]> {
   if (!process.env.MARKETAUX_API_KEY) return []
+  const cutoff = Date.now() - HOURS_48_MS
 
   try {
     const res = await axios.get('https://api.marketaux.com/v1/news/all', {
@@ -48,13 +112,19 @@ async function fetchMarketaux(symbol: string): Promise<NewsItem[]> {
       },
     })
 
-    return (res.data.data || []).map((item: { title: string; url: string; source: string; published_at: string; description: string }) => ({
-      title: item.title,
-      url: item.url,
-      source: item.source,
-      publishedAt: item.published_at,
-      snippet: item.description || '',
-    }))
+    return (res.data.data || [])
+      .map((item: { title: string; url: string; source: string; published_at: string; description: string }) => {
+        const pubDate = new Date(item.published_at)
+        return {
+          title: item.title,
+          url: item.url,
+          source: item.source,
+          publishedAt: timeAgo(pubDate),
+          publishedDate: pubDate,
+          snippet: item.description || '',
+        }
+      })
+      .filter((item: NewsItem) => item.publishedDate.getTime() >= cutoff)
   } catch (error) {
     console.error('[newsService] Marketaux failed:', error)
     return []
@@ -62,26 +132,37 @@ async function fetchMarketaux(symbol: string): Promise<NewsItem[]> {
 }
 
 export async function getNewsForStock(symbol: string, companyName: string): Promise<NewsItem[]> {
-  const query = `${companyName} stock NSE today`
-  let news = await fetchGoogleNews(query)
-  await delay(500)
+  // GUIDE: Strictly filter to last 48 hours
+  const sources = await Promise.all([
+    fetchGoogleNews(`${companyName} stock NSE`),
+    fetchTrustedFeeds(companyName),
+  ])
 
-  if (news.length < 3) {
+  let allNews = [...sources[0], ...sources[1]]
+  await delay(300)
+
+  if (allNews.length < 3) {
     const extra = await fetchMarketaux(symbol)
-    news = [...news, ...extra]
+    allNews = [...allNews, ...extra]
   }
 
-  // Deduplicate by title
+  // Deduplicate by title (case-insensitive)
   const seen = new Set<string>()
-  return news.filter(item => {
-    if (seen.has(item.title)) return false
-    seen.add(item.title)
+  const deduped = allNews.filter(item => {
+    const key = item.title.toLowerCase().substring(0, 50)
+    if (seen.has(key)) return false
+    seen.add(key)
     return true
-  }).slice(0, 5)
+  })
+
+  // Sort by date - most recent first
+  deduped.sort((a, b) => b.publishedDate.getTime() - a.publishedDate.getTime())
+
+  return deduped.slice(0, 5)
 }
 
 export async function getNewsForTopic(topic: string): Promise<NewsItem[]> {
   const news = await fetchGoogleNews(`${topic} India today`)
-  await delay(500)
+  await delay(300)
   return news.slice(0, 5)
 }

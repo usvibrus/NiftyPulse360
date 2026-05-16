@@ -22,7 +22,14 @@ model StockEvent {
   highPrice     Float
   lowPrice      Float
   volume        BigInt
+  avgVolume     BigInt?
   marketCap     Float?
+  week52High    Float?
+  week52Low     Float?
+  sectorChange  Float?
+  niftyChange   Float?
+  aiAnalysis    String?
+  faqContent    Json?
   newsItems     Json
   pageContent   String
   metaTitle     String

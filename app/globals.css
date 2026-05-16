@@ -153,6 +153,87 @@ body {
   border: 1px solid var(--color-border);
 }
 
+/* AI Analysis Block - most important */
+.prose .ai-analysis p {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #1A1A1A;
+  margin-bottom: 14px;
+}
+
+/* Section blocks */
+.prose section {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.prose section.key-reasons {
+  border-left: 4px solid var(--color-primary);
+}
+.prose section.volume-analysis {
+  border-left: 4px solid #F59E0B;
+}
+.prose section.sector-context {
+  border-left: 4px solid #8B5CF6;
+}
+.prose section.technical-snapshot {
+  border-left: 4px solid #06B6D4;
+}
+.prose section.disclaimer-block {
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  padding: 12px 16px;
+}
+
+/* News cards */
+.prose .news-item-card {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.prose .news-item-card:last-child { border-bottom: none; }
+.prose .news-item-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.prose .news-item-card h3 a {
+  color: #1A1A1A;
+  text-decoration: none;
+}
+.prose .news-item-card h3 a:hover {
+  color: var(--color-primary);
+}
+.prose .news-meta {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px !important;
+}
+.prose .news-snippet {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* FAQ */
+.prose .faq-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.prose .faq-item:last-child { border-bottom: none; }
+.prose .faq-item h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 8px;
+}
+.prose .faq-item p {
+  font-size: 14px;
+  color: #444;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .price-box-grid { grid-template-columns: repeat(2, 1fr); }
   body { font-size: 13px; }

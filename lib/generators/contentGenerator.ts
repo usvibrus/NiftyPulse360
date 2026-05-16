@@ -6,49 +6,91 @@ import type { IndexMoverData } from '@/lib/services/indicesService'
 import type { MetalData } from '@/lib/services/goldService'
 import type { CommodityData, CurrencyData } from '@/lib/services/commodityService'
 
-export function generateStockContent(stock: StockMoverData, news: NewsItem[], date: Date): string {
+export interface StockExtras {
+  aiAnalysis: string
+  faq: { question: string; answer: string }[]
+  niftyChange: number | null
+}
+
+export function generateStockContent(stock: StockMoverData, news: NewsItem[], date: Date, extras: StockExtras): string {
   const d = formatDateIST(date, 'dd MMMM yyyy')
   const verb = stock.eventType === 'RISE' ? 'rose' : 'fell'
   const sentiment = stock.eventType === 'RISE' ? 'rally' : 'decline'
+  const volRatio = stock.avgVolume > 0 ? (stock.volume / stock.avgVolume).toFixed(1) : 'N/A'
+  const isHighVolume = stock.avgVolume > 0 && stock.volume > stock.avgVolume * 1.5
+  const week52Range = stock.week52High > 0 && stock.week52Low > 0
+    ? ((stock.closePrice - stock.week52Low) / (stock.week52High - stock.week52Low) * 100).toFixed(0)
+    : null
 
-  const reasons = news.length > 0
-    ? news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n')
-    : `<li>Market-wide ${sentiment} driven by sector momentum</li><li>Institutional activity and volume surge observed</li><li>Technical breakout/breakdown on daily charts</li>`
-
-  return `
-<section class="price-summary">
-<h2>${stock.companyName} (${stock.symbol}) — Price Summary</h2>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-<div><span class="text-sm text-gray-500">Open</span><p class="font-bold">${formatINR(stock.openPrice)}</p></div>
-<div><span class="text-sm text-gray-500">Close</span><p class="font-bold">${formatINR(stock.closePrice)}</p></div>
-<div><span class="text-sm text-gray-500">High</span><p class="font-bold">${formatINR(stock.highPrice)}</p></div>
-<div><span class="text-sm text-gray-500">Low</span><p class="font-bold">${formatINR(stock.lowPrice)}</p></div>
-<div><span class="text-sm text-gray-500">Change</span><p class="font-bold ${stock.eventType === 'RISE' ? 'text-green-600' : 'text-red-600'}">${formatPercent(stock.eventType === 'RISE' ? stock.changePercent : -stock.changePercent)}</p></div>
-<div><span class="text-sm text-gray-500">Volume</span><p class="font-bold">${formatVolume(stock.volume)}</p></div>
-<div><span class="text-sm text-gray-500">Exchange</span><p class="font-bold">${stock.exchange}</p></div>
-<div><span class="text-sm text-gray-500">Sector</span><p class="font-bold">${stock.sector}</p></div>
+  // Block A: AI Analysis (most important)
+  const analysisBlock = `
+<section class="key-reasons">
+<h2>Key Reasons for Today's ${stock.eventType === 'RISE' ? 'Rise' : 'Fall'}</h2>
+<div class="ai-analysis">
+${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('')}
 </div>
-</section>
+</section>`.trim()
 
-<section class="why-move">
-<h2>Why Did ${stock.companyName} Share Price ${stock.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
-<p>${stock.companyName} (${stock.symbol}) shares ${verb} sharply by ${stock.changePercent.toFixed(2)}% on the ${stock.exchange} today, ${d}. The stock opened at ${formatINR(stock.openPrice)} and closed at ${formatINR(stock.closePrice)}, hitting a high of ${formatINR(stock.highPrice)} and a low of ${formatINR(stock.lowPrice)} during the trading session.</p>
-<p>The total traded volume was ${formatVolume(stock.volume)} shares, indicating ${stock.volume > 1000000 ? 'strong' : 'moderate'} market participation. Here are the key reasons behind today's ${sentiment}:</p>
-<ul>${reasons}</ul>
-<p>Investors and traders should note that ${stock.companyName} operates in the ${stock.sector} sector. The ${stock.changePercent.toFixed(1)}% ${verb === 'rose' ? 'gain' : 'loss'} today ${stock.changePercent > 5 ? 'is a significant move that suggests strong momentum' : 'reflects ongoing market dynamics in this sector'}. Market participants are advised to track upcoming quarterly results and sector-specific developments for further price direction.</p>
-<p>This sharp ${sentiment} in ${stock.symbol} shares has attracted attention from both retail and institutional investors. The price action suggests that the stock may continue to see elevated volatility in the near term as the market digests these developments.</p>
-</section>
+  // Block C: Volume Analysis
+  const volumeBlock = stock.avgVolume > 0 ? `
+<section class="volume-analysis">
+<h2>What the Volume Tells Us</h2>
+<p>Trading volume today was <strong>${formatVolume(stock.volume)}</strong> shares, ${volRatio}x the 30-day average of ${formatVolume(stock.avgVolume)}. ${isHighVolume ? `This elevated volume on ${stock.eventType === 'RISE' ? 'an up' : 'a down'}-day is a ${stock.eventType === 'RISE' ? 'bullish' : 'bearish'} signal indicating ${stock.eventType === 'RISE' ? 'strong buying conviction and likely institutional participation' : 'aggressive selling and potential institutional unwinding'}.` : 'This is in line with normal trading activity, suggesting the move is driven more by retail flows than institutional repositioning.'}</p>
+</section>`.trim() : ''
 
+  // Block D: Sector & Market Context
+  const sectorComparison = extras.niftyChange !== null
+    ? `The Nifty 50 ${extras.niftyChange > 0 ? 'gained' : 'lost'} ${Math.abs(extras.niftyChange).toFixed(2)}% today. ${stock.changePercent > Math.abs(extras.niftyChange) ? `${stock.symbol} ${stock.eventType === 'RISE' ? 'outperformed' : 'underperformed'} the broader market by ${(stock.changePercent - Math.abs(extras.niftyChange)).toFixed(2)} percentage points` : `${stock.symbol} moved broadly in line with the market`}.`
+    : ''
+
+  const sectorBlock = `
+<section class="sector-context">
+<h2>Sector & Market Context</h2>
+<p>${stock.companyName} operates in the <strong>${stock.sector}</strong> sector. ${sectorComparison} Tracking sector peers and the broader index helps determine whether the move is company-specific or part of a wider trend.</p>
+</section>`.trim()
+
+  // Block: 52-Week Context
+  const week52Block = stock.week52High > 0 ? `
+<section class="technical-snapshot">
+<h2>52-Week Range & Technical Context</h2>
+<p>${stock.companyName} has traded between <strong>₹${stock.week52Low.toFixed(2)}</strong> (52-week low) and <strong>₹${stock.week52High.toFixed(2)}</strong> (52-week high) over the past year. At the current price of ₹${stock.closePrice.toFixed(2)}, the stock is at ${week52Range}% of its 52-week range. ${parseInt(week52Range || '50') > 75 ? 'The stock is trading near its yearly highs, suggesting strong momentum.' : parseInt(week52Range || '50') < 25 ? 'The stock is trading near its yearly lows, which may attract value buyers but also signals caution.' : 'The stock is in the middle of its yearly range, leaving room for movement in either direction.'}</p>
+</section>`.trim() : ''
+
+  // News Section (only last 48hrs)
+  const newsBlock = news.length > 0 ? `
 <section class="news-section">
-<h2>Latest News About ${stock.companyName}</h2>
-${news.length > 0 ? news.map(n => `
-<article class="news-item border-b pb-3 mb-3">
+<h2>Latest News on ${stock.companyName}</h2>
+<p class="text-sm text-[#666] mb-3">Showing news from last 48 hours</p>
+${news.map(n => `
+<article class="news-item-card">
 <h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="text-sm text-gray-500">${n.source} • ${n.publishedAt}</p>
-${n.snippet ? `<p class="text-gray-700">${n.snippet}</p>` : ''}
-</article>`).join('') : '<p>No specific news articles found for this stock today. The movement may be driven by broader market trends or sector rotation.</p>'}
-</section>
-`.trim()
+<p class="news-meta">${n.source} • ${n.publishedAt}</p>
+${n.snippet ? `<p class="news-snippet">${n.snippet.substring(0, 200)}${n.snippet.length > 200 ? '...' : ''}</p>` : ''}
+</article>`).join('')}
+</section>` : `
+<section class="news-section">
+<h2>Latest News on ${stock.companyName}</h2>
+<p>No major news was published for ${stock.companyName} in the last 48 hours. Today's ${sentiment} may be driven by broader market sentiment, sector rotation, or technical factors.</p>
+</section>`.trim()
+
+  // FAQ Section
+  const faqBlock = extras.faq.length > 0 ? `
+<section class="faq-section">
+<h2>Frequently Asked Questions About ${stock.companyName}</h2>
+${extras.faq.map(f => `
+<div class="faq-item">
+<h3>${f.question}</h3>
+<p>${f.answer}</p>
+</div>`).join('')}
+</section>` : ''
+
+  // Disclaimer
+  const disclaimer = `
+<section class="disclaimer-block">
+<p class="text-xs text-[#666] italic">Disclaimer: NiftyPulse360 is not a SEBI-registered investment advisor. The information above is for educational purposes only and should not be construed as financial advice. Always consult a qualified advisor before making investment decisions.</p>
+</section>`.trim()
+
+  return [analysisBlock, volumeBlock, sectorBlock, week52Block, newsBlock, faqBlock, disclaimer].filter(Boolean).join('\n\n')
 }
 
 export function generateIndexContent(index: IndexMoverData, news: NewsItem[], date: Date): string {
@@ -74,7 +116,6 @@ export function generateIndexContent(index: IndexMoverData, news: NewsItem[], da
 <p>Here are the key factors behind today's market ${sentiment}:</p>
 <ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || '<li>Broad market movement driven by global cues and FII/DII activity</li>'}</ul>
 <p>The ${index.indexName} movement today reflects ${index.eventType === 'RISE' ? 'positive sentiment driven by buying interest across key sectors' : 'selling pressure amid concerns over global and domestic factors'}. Traders should watch for follow-through in the next session to confirm the trend direction.</p>
-<p>Foreign Institutional Investors (FIIs) and Domestic Institutional Investors (DIIs) activity will be key to watch for understanding whether this ${sentiment} has legs or is a one-day event.</p>
 </section>
 
 <section class="news-section">

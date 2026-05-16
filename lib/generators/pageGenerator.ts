@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/db/prisma'
 import { Prisma } from '@prisma/client'
-import { getStockMovers } from '@/lib/services/stockService'
+import { getStockMovers, getNiftyChangePercent } from '@/lib/services/stockService'
 import { getIndexMovers } from '@/lib/services/indicesService'
 import { getMetalMovers } from '@/lib/services/goldService'
 import { getCommodityMovers, getCurrencyMovers } from '@/lib/services/commodityService'
 import { getNewsForStock, getNewsForTopic } from '@/lib/services/newsService'
+import { generateStockAnalysis } from '@/lib/services/aiAnalysisService'
 import { generateStockSlug, generateIndexSlug, generateMetalSlug, generateCommoditySlug, generateCurrencySlug } from './slugGenerator'
 import { generateStockTitle, generateIndexTitle, generateMetalTitle, generateCommodityTitle, generateCurrencyTitle } from './titleGenerator'
 import { generateStockContent, generateIndexContent, generateMetalContent, generateCommodityContent, generateCurrencyContent } from './contentGenerator'
@@ -19,8 +20,11 @@ export async function generateStockPages() {
   const eventDate = nowIST()
 
   try {
-    const movers = await getStockMovers()
-    console.log(`[pageGenerator] Found ${movers.length} stock movers`)
+    const [movers, niftyChange] = await Promise.all([
+      getStockMovers(),
+      getNiftyChangePercent(),
+    ])
+    console.log(`[pageGenerator] Found ${movers.length} stock movers, Nifty change: ${niftyChange}`)
 
     for (const stock of movers) {
       try {
@@ -28,12 +32,51 @@ export async function generateStockPages() {
         const existing = await prisma.stockEvent.findUnique({ where: { slug } })
         if (existing) { stats.skipped++; continue }
 
+        // Fetch news (only last 48 hours)
         const news = await getNewsForStock(stock.symbol, stock.companyName)
         await delay(500)
 
-        const { metaTitle, metaDesc } = generateStockTitle(stock.companyName, stock.symbol, stock.eventType, stock.changePercent, eventDate)
-        const pageContent = generateStockContent(stock, news, eventDate)
-        const keywords = [stock.symbol, stock.companyName, `${stock.symbol} share price`, `why ${stock.companyName} ${stock.eventType === 'RISE' ? 'rose' : 'fell'} today`]
+        // Generate AI analysis with Gemini
+        const aiResult = await generateStockAnalysis({
+          symbol: stock.symbol,
+          companyName: stock.companyName,
+          sector: stock.sector,
+          changePercent: stock.changePercent,
+          eventType: stock.eventType,
+          open: stock.openPrice,
+          close: stock.closePrice,
+          high: stock.highPrice,
+          low: stock.lowPrice,
+          volume: stock.volume,
+          avgVolume: stock.avgVolume,
+          week52High: stock.week52High,
+          week52Low: stock.week52Low,
+          sectorChange: null, // Could be enriched later
+          niftyChange,
+          date: eventDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }),
+        }, news)
+
+        // Generate title with news trigger
+        const newsTrigger = news.length > 0 ? news[0].title : undefined
+        const { metaTitle, metaDesc } = generateStockTitle(
+          stock.companyName, stock.symbol, stock.eventType, stock.changePercent, eventDate,
+          { newsTrigger, volume: stock.volume, avgVolume: stock.avgVolume, sector: stock.sector }
+        )
+
+        const pageContent = generateStockContent(stock, news, eventDate, {
+          aiAnalysis: aiResult.analysis,
+          faq: aiResult.faq,
+          niftyChange,
+        })
+
+        const keywords = [
+          stock.symbol,
+          stock.companyName,
+          `${stock.symbol} share price`,
+          `${stock.symbol} NSE today`,
+          `why ${stock.companyName} ${stock.eventType === 'RISE' ? 'rose' : 'fell'} today`,
+          `${stock.companyName} stock news`,
+        ]
 
         await prisma.stockEvent.create({
           data: {
@@ -41,7 +84,14 @@ export async function generateStockPages() {
             sector: stock.sector, eventType: stock.eventType, changePercent: stock.changePercent,
             changeAmount: stock.changeAmount, openPrice: stock.openPrice, closePrice: stock.closePrice,
             highPrice: stock.highPrice, lowPrice: stock.lowPrice, volume: BigInt(stock.volume),
-            marketCap: stock.marketCap, newsItems: news as unknown as Prisma.InputJsonValue, pageContent, metaTitle, metaDesc, keywords, eventDate,
+            avgVolume: stock.avgVolume > 0 ? BigInt(stock.avgVolume) : null,
+            week52High: stock.week52High > 0 ? stock.week52High : null,
+            week52Low: stock.week52Low > 0 ? stock.week52Low : null,
+            niftyChange,
+            aiAnalysis: aiResult.analysis,
+            faqContent: aiResult.faq as unknown as Prisma.InputJsonValue,
+            marketCap: stock.marketCap, newsItems: news as unknown as Prisma.InputJsonValue,
+            pageContent, metaTitle, metaDesc, keywords, eventDate,
           },
         })
 
