@@ -48,8 +48,12 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50">
       <div className="bg-[#0D1B2A] h-9 flex items-center justify-between px-4">
-        <Link href="/" className="flex items-center">
-          <img src="/logo.svg" alt="NiftyPulse360" className="h-6" />
+        <Link href="/" className="flex items-center gap-2">
+          <img src="/icon.svg" alt="NiftyPulse360" className="h-8 rounded-lg" />
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-lg leading-tight">NiftyPulse<span className="text-[#4FC3F7]">360</span></span>
+            <span className="text-[#7a8a9e] text-[10px] tracking-[0.2em] uppercase leading-tight">Market Intelligence</span>
+          </div>
         </Link>
       </div>
       <TickerBar />
