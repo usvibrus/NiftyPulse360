@@ -16,26 +16,24 @@ export default async function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
-      {/* Market Summary Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-0 bg-white border border-[#E0E0E0] rounded mb-4 overflow-x-auto">
-        {indices.slice(0, 3).map(i => (
-          <div key={i.slug} className="p-3 border-r border-[#E0E0E0] last:border-r-0">
-            <div className="text-xs text-[#666] font-semibold uppercase">{i.indexName}</div>
-            <div className="font-mono-price text-lg font-bold">{i.closeValue.toLocaleString('en-IN')}</div>
-            <div className={`text-xs font-bold ${i.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>
-              {i.eventType === 'RISE' ? '▲' : '▼'} {Math.round(i.changePoints)} ({i.changePercent.toFixed(2)}%)
-            </div>
-          </div>
-        ))}
-        {metals.slice(0, 2).map(m => (
-          <div key={m.slug} className="p-3 border-r border-[#E0E0E0] last:border-r-0">
-            <div className="text-xs text-[#666] font-semibold uppercase">{m.metal} {m.carat || ''}</div>
-            <div className="font-mono-price text-lg font-bold">₹{m.pricePerGram.toFixed(0)}/g</div>
-            <div className={`text-xs font-bold ${m.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>
-              {m.eventType === 'RISE' ? '▲' : '▼'} {m.changePercent.toFixed(2)}%
-            </div>
-          </div>
-        ))}
+      {/* Market Summary Strip - 4 cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="bg-white border border-[#E0E0E0] rounded-md p-4">
+          <div className="text-xs text-[#666] font-semibold uppercase">NIFTY 50</div>
+          {indices.find(i => i.indexName === 'Nifty 50') ? (() => { const n = indices.find(i => i.indexName === 'Nifty 50')!; return (<><div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">{n.closeValue.toLocaleString('en-IN')}</div><div className={`text-sm font-bold mt-1 ${n.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>{n.eventType === 'RISE' ? '▲' : '▼'} {Math.round(n.changePoints)} ({n.changePercent.toFixed(2)}%)</div></>)})() : <div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">—</div>}
+        </div>
+        <div className="bg-white border border-[#E0E0E0] rounded-md p-4">
+          <div className="text-xs text-[#666] font-semibold uppercase">SENSEX</div>
+          {indices.find(i => i.indexName === 'Sensex') ? (() => { const s = indices.find(i => i.indexName === 'Sensex')!; return (<><div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">{s.closeValue.toLocaleString('en-IN')}</div><div className={`text-sm font-bold mt-1 ${s.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>{s.eventType === 'RISE' ? '▲' : '▼'} {Math.round(s.changePoints)} ({s.changePercent.toFixed(2)}%)</div></>)})() : <div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">—</div>}
+        </div>
+        <div className="bg-white border border-[#E0E0E0] rounded-md p-4">
+          <div className="text-xs text-[#666] font-semibold uppercase">GOLD 24K</div>
+          {metals.find(m => m.metal === 'GOLD') ? (() => { const g = metals.find(m => m.metal === 'GOLD')!; return (<><div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">₹{g.pricePerGram.toFixed(0)}/g</div><div className={`text-sm font-bold mt-1 ${g.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>{g.eventType === 'RISE' ? '▲' : '▼'} {g.changePercent.toFixed(2)}%</div></>)})() : <div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">—</div>}
+        </div>
+        <div className="bg-white border border-[#E0E0E0] rounded-md p-4">
+          <div className="text-xs text-[#666] font-semibold uppercase">SILVER</div>
+          {metals.find(m => m.metal === 'SILVER') ? (() => { const sv = metals.find(m => m.metal === 'SILVER')!; return (<><div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">₹{sv.pricePerGram.toFixed(0)}/g</div><div className={`text-sm font-bold mt-1 ${sv.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>{sv.eventType === 'RISE' ? '▲' : '▼'} {sv.changePercent.toFixed(2)}%</div></>)})() : <div className="font-mono-price text-xl font-bold text-[#1A1A1A] mt-1">—</div>}
+        </div>
       </div>
 
       {/* Main Content - 2 column */}
