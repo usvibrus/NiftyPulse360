@@ -29,12 +29,28 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
   const event = await prisma.stockEvent.findUnique({ where: { slug } })
   if (!event) notFound()
 
+  // Related stocks today (same day, different symbols)
   const related = await prisma.stockEvent.findMany({
     where: { isPublished: true, slug: { not: slug } },
     orderBy: { publishedAt: 'desc' },
     take: 6,
     select: { slug: true, companyName: true, symbol: true, eventType: true, changePercent: true, closePrice: true },
   })
+
+  // GUIDE 10.1: Previous day page for same symbol
+  const previousDay = await prisma.stockEvent.findFirst({
+    where: { isPublished: true, symbol: event.symbol, slug: { not: slug }, eventDate: { lt: event.eventDate } },
+    orderBy: { eventDate: 'desc' },
+    select: { slug: true, eventType: true, changePercent: true, eventDate: true },
+  })
+
+  // GUIDE 10.1: Recent same-sector stocks (sector context)
+  const sectorPeers = event.sector ? await prisma.stockEvent.findMany({
+    where: { isPublished: true, sector: event.sector, slug: { not: slug } },
+    orderBy: { publishedAt: 'desc' },
+    take: 4,
+    select: { slug: true, symbol: true, eventType: true, changePercent: true },
+  }) : []
 
   const newsItems = (event.newsItems as { title: string; url: string; source: string; publishedAt: string; snippet?: string }[]) || []
   const faqItems = (event.faqContent as { question: string; answer: string }[]) || []
@@ -86,6 +102,9 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
 
           <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER || ''} />
 
+          {/* Section: Price Performance Summary (H2) */}
+          <h2 className="text-lg font-bold text-[#1A1A1A] mb-3 mt-2">Price Performance Summary</h2>
+
           {/* Price Summary Box */}
           <div className="price-box mb-6">
             <div className="price-box-header flex justify-between items-center flex-wrap gap-4">
@@ -115,13 +134,57 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
             </div>
           </div>
 
+          {/* Internal links bar - GUIDE 10.1 */}
+          <div className="bg-[#F5F7FA] border border-[#E0E0E0] rounded-md p-3 mb-6 flex flex-wrap gap-3 text-sm">
+            {previousDay && (
+              <Link href={`/stocks/${previousDay.slug}`} className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold">
+                ← See {event.symbol} on {format(previousDay.eventDate, 'dd MMM')} ({previousDay.eventType === 'RISE' ? '▲' : '▼'} {previousDay.changePercent.toFixed(1)}%)
+              </Link>
+            )}
+            <Link href="/indices" className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold ml-auto">
+              See How Indices Performed Today →
+            </Link>
+          </div>
+
           {/* Page Content with all blocks */}
           <div className="prose max-w-none mb-6" dangerouslySetInnerHTML={{ __html: event.pageContent }} />
 
           <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE || ''} />
 
+          {/* Expert/Analyst View — GUIDE Section 2 */}
+          <section className="bg-white border border-[#E0E0E0] rounded-md p-5 mb-6 border-l-4 border-l-[#10B981]">
+            <h2 className="text-lg font-bold text-[#1A1A1A] mb-3 flex items-center gap-2">
+              💼 Expert View
+            </h2>
+            <p className="text-sm text-[#444] leading-relaxed">
+              Analyst ratings and broker views for {event.companyName} are tracked across major brokerages including Motilal Oswal, ICICI Securities, and HDFC Securities.
+              Investors should consider the consensus target price, upcoming earnings calendar, and any analyst upgrade/downgrade actions when evaluating today&apos;s {event.eventType === 'RISE' ? 'rally' : 'decline'}.
+              {sectorPeers.length > 0 ? ` Compare with sector peers ${sectorPeers.slice(0, 3).map(p => p.symbol).join(', ')} for relative strength analysis.` : ''}
+            </p>
+            <p className="text-xs text-[#666] mt-3 italic">
+              Note: NiftyPulse360 does not provide buy/sell recommendations. Consult a SEBI-registered investment advisor before making decisions.
+            </p>
+          </section>
+
+          {/* Sector Peers - GUIDE 10.1 */}
+          {sectorPeers.length > 0 && (
+            <div className="mb-6">
+              <div className="section-header"><span>{event.sector} Sector Peers</span></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-0 bg-white border border-t-0 border-[#E0E0E0]">
+                {sectorPeers.map(p => (
+                  <Link key={p.slug} href={`/stocks/${p.slug}`} className="p-3 border-r border-b border-[#E0E0E0] hover:bg-[#F5F7FA]">
+                    <div className="font-semibold text-sm">{p.symbol}</div>
+                    <div className={`font-mono-price text-sm font-bold mt-1 ${p.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>
+                      {p.eventType === 'RISE' ? '▲' : '▼'} {p.changePercent.toFixed(2)}%
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Related Stocks */}
-          <div className="mb-6 mt-6">
+          <div className="mb-6">
             <div className="section-header"><span>More Stocks That Moved Today</span></div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-0 bg-white border border-t-0 border-[#E0E0E0]">
               {related.map(r => (
@@ -134,6 +197,26 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
                 </Link>
               ))}
             </div>
+          </div>
+
+          {/* Category Page Links */}
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <Link href="/stocks/top-gainers-today" className="bg-white border border-[#E0E0E0] rounded p-3 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+              <div className="font-semibold text-[#1A1A1A]">📈 Top Gainers</div>
+              <div className="text-xs text-[#666] mt-1">Today&apos;s biggest movers up</div>
+            </Link>
+            <Link href="/stocks/top-losers-today" className="bg-white border border-[#E0E0E0] rounded p-3 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+              <div className="font-semibold text-[#1A1A1A]">📉 Top Losers</div>
+              <div className="text-xs text-[#666] mt-1">Today&apos;s biggest movers down</div>
+            </Link>
+            <Link href="/indices" className="bg-white border border-[#E0E0E0] rounded p-3 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+              <div className="font-semibold text-[#1A1A1A]">📊 Indices</div>
+              <div className="text-xs text-[#666] mt-1">Nifty, Sensex, Bank Nifty</div>
+            </Link>
+            <Link href="/gold" className="bg-white border border-[#E0E0E0] rounded p-3 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+              <div className="font-semibold text-[#1A1A1A]">🪙 Gold &amp; Silver</div>
+              <div className="text-xs text-[#666] mt-1">Today&apos;s precious metal rates</div>
+            </Link>
           </div>
 
           <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_FOOTER || ''} />
