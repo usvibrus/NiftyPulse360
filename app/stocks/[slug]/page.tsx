@@ -10,13 +10,15 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const event = await prisma.stockEvent.findUnique({ where: { slug }, select: { metaTitle: true, metaDesc: true, slug: true } })
+  const event = await prisma.stockEvent.findUnique({ where: { slug }, select: { metaTitle: true, metaDesc: true, slug: true, symbol: true, changePercent: true, eventType: true } })
   if (!event) return { title: 'Not Found' }
+  const ogImage = `${process.env.NEXT_PUBLIC_SITE_URL}/api/og?title=${encodeURIComponent(event.metaTitle)}&symbol=${event.symbol}&change=${event.changePercent.toFixed(1)}%25&type=${event.eventType}`
   return {
     title: event.metaTitle,
     description: event.metaDesc,
     alternates: { canonical: `/stocks/${event.slug}` },
-    openGraph: { title: event.metaTitle, description: event.metaDesc, type: 'article' },
+    openGraph: { title: event.metaTitle, description: event.metaDesc, type: 'article', images: [{ url: ogImage, width: 1200, height: 630 }] },
+    twitter: { card: 'summary_large_image', images: [ogImage] },
   }
 }
 
