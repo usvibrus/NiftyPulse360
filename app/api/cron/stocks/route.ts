@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { verifyCronAuth } from '@/lib/utils/cronAuth'
 import { generateStockPages } from '@/lib/generators/pageGenerator'
 import { processIndexingQueue } from '@/lib/seo/indexingService'
+import { postToLinkedIn } from '@/lib/seo/linkedinService'
 
 export async function POST(request: Request) {
   if (!verifyCronAuth(request)) {
@@ -11,7 +12,8 @@ export async function POST(request: Request) {
   try {
     const result = await generateStockPages()
     const indexing = await processIndexingQueue()
-    return NextResponse.json({ success: true, ...result, indexing })
+    const linkedin = await postToLinkedIn()
+    return NextResponse.json({ success: true, ...result, indexing, linkedin })
   } catch (error) {
     console.error('[cron/stocks] Error:', error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })
