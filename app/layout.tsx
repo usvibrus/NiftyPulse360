@@ -18,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <meta name="google-site-verification" content="Gp64e-hXtGzB7HQOV5DwUQSio69pEJ2c8d_vKjXGdNM" />
+        <meta name="p:domain_verify" content="3a2c36fc6bc5f657ec631850fef56b4d" />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
           <script
             async
