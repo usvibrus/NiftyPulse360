@@ -11,20 +11,21 @@ const NAV_ITEMS = [
 
 async function getTickerData() {
   try {
-    const [indices, metals, commodities, currencies] = await Promise.all([
+    const [indices, metals, commodities, currencies, stocks] = await Promise.all([
       prisma.indexEvent.findMany({ orderBy: { eventDate: 'desc' }, take: 3, select: { indexName: true, closeValue: true, changePercent: true, eventType: true } }),
       prisma.metalEvent.findMany({ orderBy: { eventDate: 'desc' }, take: 2, select: { metal: true, carat: true, pricePerGram: true, changePercent: true, eventType: true } }),
       prisma.commodityEvent.findMany({ orderBy: { eventDate: 'desc' }, take: 1, select: { commodity: true, priceUSD: true, changePercent: true, eventType: true } }),
       prisma.currencyEvent.findMany({ orderBy: { eventDate: 'desc' }, take: 1, select: { pair: true, rateValue: true, changePercent: true, eventType: true } }),
+      prisma.stockEvent.findMany({ orderBy: { publishedAt: 'desc' }, take: 6, select: { symbol: true, closePrice: true, changePercent: true, eventType: true } }),
     ])
-    return { indices, metals, commodities, currencies }
+    return { indices, metals, commodities, currencies, stocks }
   } catch {
-    return { indices: [], metals: [], commodities: [], currencies: [] }
+    return { indices: [], metals: [], commodities: [], currencies: [], stocks: [] }
   }
 }
 
 export default async function Header() {
-  const { indices, metals, commodities, currencies } = await getTickerData()
+  const { indices, metals, commodities, currencies, stocks } = await getTickerData()
 
   const tickerItems: { label: string; value: string; change: string; isRise: boolean }[] = []
 
@@ -40,6 +41,9 @@ export default async function Header() {
   currencies.forEach(c => {
     tickerItems.push({ label: c.pair.replace('_', '/'), value: `₹${c.rateValue.toFixed(2)}`, change: `${c.eventType === 'RISE' ? '▲' : '▼'}${c.changePercent.toFixed(2)}%`, isRise: c.eventType === 'RISE' })
   })
+  stocks.forEach(s => {
+    tickerItems.push({ label: s.symbol, value: `₹${s.closePrice.toFixed(0)}`, change: `${s.eventType === 'RISE' ? '▲' : '▼'}${s.changePercent.toFixed(2)}%`, isRise: s.eventType === 'RISE' })
+  })
 
   return (
     <header className="sticky top-0 z-50">
@@ -52,7 +56,7 @@ export default async function Header() {
           </div>
         </Link>
       </div>
-      {tickerItems.length > 0 && (
+      {tickerItems.length > 0 ? (
         <div className="ticker-bar">
           <div className="ticker-content">
             {[...tickerItems, ...tickerItems].map((item, i) => (
@@ -61,6 +65,10 @@ export default async function Header() {
               </span>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="ticker-bar flex items-center justify-center">
+          <span className="text-[#7a8a9e] text-xs">Market data loading...</span>
         </div>
       )}
       <nav className="bg-white border-b border-[#E0E0E0] h-11 flex items-center px-4 gap-6 overflow-x-auto">
