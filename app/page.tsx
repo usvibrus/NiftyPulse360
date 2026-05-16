@@ -17,7 +17,7 @@ export default async function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
       {/* Market Summary Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-0 bg-white border border-[#E0E0E0] rounded mb-4 overflow-x-auto">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-0 bg-white border border-[#E0E0E0] rounded mb-4 overflow-x-auto">
         {indices.slice(0, 3).map(i => (
           <div key={i.slug} className="p-3 border-r border-[#E0E0E0] last:border-r-0">
             <div className="text-xs text-[#666] font-semibold uppercase">{i.indexName}</div>
@@ -36,11 +36,6 @@ export default async function HomePage() {
             </div>
           </div>
         ))}
-        <div className="p-3">
-          <div className="text-xs text-[#666] font-semibold uppercase">USD/INR</div>
-          <div className="font-mono-price text-lg font-bold">₹83.45</div>
-          <div className="text-xs font-bold text-fall">▼ -0.05%</div>
-        </div>
       </div>
 
       {/* Main Content - 2 column */}
