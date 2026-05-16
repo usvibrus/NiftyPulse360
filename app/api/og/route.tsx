@@ -18,17 +18,17 @@ export async function GET(request: NextRequest) {
   return new ImageResponse(
     (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: bgGradient, padding: '60px', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: '#1565C0', borderRadius: '12px', padding: '8px 16px', color: 'white', fontSize: '24px', fontWeight: 'bold' }}>NiftyPulse360</div>
+        <div style={{ display: 'flex' }}>
+          <div style={{ display: 'flex', background: '#1565C0', borderRadius: '12px', padding: '8px 16px', color: 'white', fontSize: '24px', fontWeight: 'bold' }}>NiftyPulse360</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ color: 'white', fontSize: '44px', fontWeight: 'bold', lineHeight: 1.2 }}>{title}</div>
+          <div style={{ display: 'flex', color: 'white', fontSize: '44px', fontWeight: 'bold', lineHeight: 1.2 }}>{title}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {symbol && <div style={{ color: '#94A3B8', fontSize: '28px', fontWeight: '600' }}>{symbol}</div>}
-            {change && <div style={{ color: changeColor, fontSize: '36px', fontWeight: 'bold' }}>{arrow} {change}</div>}
+            {symbol && <div style={{ display: 'flex', color: '#94A3B8', fontSize: '28px', fontWeight: '600' }}>{symbol}</div>}
+            {change && <div style={{ display: 'flex', color: changeColor, fontSize: '36px', fontWeight: 'bold' }}>{arrow} {change}</div>}
           </div>
         </div>
-        <div style={{ color: '#64748B', fontSize: '20px' }}>niftypulse360.com • India&apos;s Market Intelligence</div>
+        <div style={{ display: 'flex', color: '#64748B', fontSize: '20px' }}>niftypulse360.com</div>
       </div>
     ),
     { width: 1200, height: 630 }
