@@ -42,6 +42,7 @@ model StockEvent {
   pageViews     Int      @default(0)
   tweetPosted   Boolean  @default(false)
   googleIndexed Boolean  @default(false)
+  devtoPosted   Boolean  @default(false)
 
   @@index([symbol])
   @@index([eventDate])
