@@ -43,6 +43,7 @@ model StockEvent {
   tweetPosted   Boolean  @default(false)
   googleIndexed Boolean  @default(false)
   devtoPosted   Boolean  @default(false)
+  tumblrPosted  Boolean  @default(false)
 
   @@index([symbol])
   @@index([eventDate])

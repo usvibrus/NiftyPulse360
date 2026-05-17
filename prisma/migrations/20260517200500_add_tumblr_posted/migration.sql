@@ -1,0 +1,1 @@
+ALTER TABLE "StockEvent" ADD COLUMN "tumblrPosted" BOOLEAN NOT NULL DEFAULT false;

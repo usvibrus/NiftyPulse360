@@ -28,6 +28,7 @@
     "rss-parser": "^3.13.0",
     "slugify": "^1.6.9",
     "stock-nse-india": "^1.3.0",
+    "tumblr.js": "^3.0.0",
     "twitter-api-v2": "^1.29.0",
     "xml2js": "^0.6.2",
     "yahoo-finance2": "^3.14.0"
