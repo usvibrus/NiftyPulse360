@@ -6,6 +6,7 @@ import { postToLinkedIn } from '@/lib/seo/linkedinService'
 import { postToPinterest } from '@/lib/seo/pinterestService'
 import { postToDevTo } from '@/lib/seo/devtoService'
 import { postToTumblr } from '@/lib/seo/tumblrService'
+import { postToTelegraph } from '@/lib/seo/telegraphService'
 
 export async function POST(request: Request) {
   if (!verifyCronAuth(request)) {
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
     const pinterest = await postToPinterest()
     const devto = await postToDevTo()
     const tumblr = await postToTumblr()
-    return NextResponse.json({ success: true, ...result, indexing, linkedin, pinterest, devto, tumblr })
+    const telegraph = await postToTelegraph()
+    return NextResponse.json({ success: true, ...result, indexing, linkedin, pinterest, devto, tumblr, telegraph })
   } catch (error) {
     console.error('[cron/stocks] Error:', error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })

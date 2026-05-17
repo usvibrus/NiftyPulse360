@@ -40,10 +40,11 @@ model StockEvent {
   updatedAt     DateTime @updatedAt
   isPublished   Boolean  @default(true)
   pageViews     Int      @default(0)
-  tweetPosted   Boolean  @default(false)
-  googleIndexed Boolean  @default(false)
-  devtoPosted   Boolean  @default(false)
-  tumblrPosted  Boolean  @default(false)
+  tweetPosted     Boolean  @default(false)
+  googleIndexed   Boolean  @default(false)
+  devtoPosted     Boolean  @default(false)
+  tumblrPosted    Boolean  @default(false)
+  telegraphPosted Boolean  @default(false)
 
   @@index([symbol])
   @@index([eventDate])
