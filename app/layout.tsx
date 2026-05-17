@@ -10,13 +10,20 @@ export const metadata: Metadata = {
   title: { default: 'NiftyPulse360 — Indian Stock Market News & Analysis', template: '%s | NiftyPulse360' },
   description: 'Real-time Indian stock market updates. Find out why stocks rose or fell today with news, analysis and expert views.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <meta name="google-site-verification" content="Gp64e-hXtGzB7HQOV5DwUQSio69pEJ2c8d_vKjXGdNM" />
         <meta name="p:domain_verify" content="3a2c36fc6bc5f657ec631850fef56b4d" />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
