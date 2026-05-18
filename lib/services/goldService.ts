@@ -13,6 +13,15 @@ export interface MetalData {
 
 const TROY_OUNCE_TO_GRAMS = 31.1035
 
+// Sanity bounds (INR per troy ounce). Real values: gold ~₹4-7L/oz, silver ~₹70-150K/oz.
+// Anything outside these ranges is corrupted data — refuse to use it.
+const PLAUSIBLE_RANGES = {
+  GOLD: { min: 100000, max: 2000000 },   // ₹1L to ₹20L per ounce
+  SILVER: { min: 10000, max: 500000 },   // ₹10K to ₹5L per ounce
+} as const
+
+const MAX_DAILY_CHANGE_PCT = 25 // gold/silver almost never move >25% in a day
+
 async function fetchMetalPriceAPI(): Promise<{ goldINR: number; silverINR: number } | null> {
   try {
     const res = await axios.get('https://api.metalpriceapi.com/v1/latest', {
@@ -41,13 +50,23 @@ async function fetchGoldAPIFallback(): Promise<{ goldINR: number; silverINR: num
   }
 }
 
-async function getYesterdayPrice(metal: string): Promise<number | null> {
+// Find the most recent SANE previous price (skip corrupted records)
+async function getYesterdayPrice(metal: 'GOLD' | 'SILVER'): Promise<number | null> {
+  const range = PLAUSIBLE_RANGES[metal]
   const last = await prisma.metalEvent.findFirst({
-    where: { metal },
+    where: {
+      metal,
+      pricePerOunce: { gte: range.min, lte: range.max },
+    },
     orderBy: { eventDate: 'desc' },
     select: { pricePerOunce: true },
   })
   return last?.pricePerOunce ?? null
+}
+
+function isPlausiblePrice(metal: 'GOLD' | 'SILVER', pricePerOunce: number): boolean {
+  const range = PLAUSIBLE_RANGES[metal]
+  return pricePerOunce >= range.min && pricePerOunce <= range.max
 }
 
 export async function getMetalMovers(): Promise<MetalData[]> {
@@ -57,14 +76,27 @@ export async function getMetalMovers(): Promise<MetalData[]> {
   const movers: MetalData[] = []
 
   for (const [metal, pricePerOunce] of [['GOLD', prices.goldINR], ['SILVER', prices.silverINR]] as const) {
+    // GUARD 1: today's price must itself be plausible
+    if (!isPlausiblePrice(metal, pricePerOunce)) {
+      console.warn(`[goldService] Today's ${metal} price ₹${pricePerOunce.toFixed(2)}/oz is outside plausible range. Skipping.`)
+      continue
+    }
+
     const yesterday = await getYesterdayPrice(metal)
     if (!yesterday) {
-      // First run — store price but don't generate page
-      console.log(`[goldService] No previous ${metal} price found, skipping page generation`)
+      // First run — store baseline only, don't generate movement page
+      console.log(`[goldService] No sane previous ${metal} price found. Storing baseline only.`)
       continue
     }
 
     const changePercent = ((pricePerOunce - yesterday) / yesterday) * 100
+
+    // GUARD 2: ignore implausibly large daily moves (data corruption indicator)
+    if (Math.abs(changePercent) > MAX_DAILY_CHANGE_PCT) {
+      console.warn(`[goldService] ${metal} daily change ${changePercent.toFixed(2)}% exceeds ${MAX_DAILY_CHANGE_PCT}% threshold. Skipping (likely corrupted baseline).`)
+      continue
+    }
+
     if (Math.abs(changePercent) < 0.5) continue
 
     const pricePerGram = pricePerOunce / TROY_OUNCE_TO_GRAMS
