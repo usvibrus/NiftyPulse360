@@ -1,0 +1,89 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Methodology',
+  description: 'How NiftyPulse360 generates per-stock explanations: data inputs, movement thresholds, AI prompting, and quality gates.',
+  alternates: { canonical: '/methodology' },
+}
+
+export default function MethodologyPage() {
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-8 prose">
+      <nav className="text-xs text-[#666] mb-3" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-[#1565C0]">Home</Link> › <span className="text-[#1A1A1A]">Methodology</span>
+      </nav>
+      <h1>Methodology</h1>
+      <p className="text-sm text-[#666]">Last updated: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+      <h2>Overview</h2>
+      <p>NiftyPulse360 publishes a daily &quot;why did this move&quot; explanation page for each significant Indian stock, index, metal, and commodity move. This page explains exactly how those pages are built so readers can evaluate the trustworthiness of every claim we publish.</p>
+
+      <h2>1. Movement Detection Thresholds</h2>
+      <p>We do not generate a page for every minor move. A move qualifies for analysis only if it crosses these thresholds at session close:</p>
+      <ul>
+        <li><strong>Stocks:</strong> absolute change ≥ 1.0% with traded volume ≥ 100,000 shares (Nifty 200 universe).</li>
+        <li><strong>Indices:</strong> absolute change ≥ 0.5% (Nifty 50, Sensex, Bank Nifty, sector indices).</li>
+        <li><strong>Gold/Silver:</strong> absolute change in INR per gram ≥ 0.5% from prior close.</li>
+        <li><strong>Commodities:</strong> absolute change ≥ 1.0% (crude oil, natural gas, copper, etc.).</li>
+        <li><strong>Currencies:</strong> absolute change ≥ 0.3% (USD/INR, EUR/INR, GBP/INR, JPY/INR).</li>
+      </ul>
+
+      <h2>2. Data Inputs Per Page</h2>
+      <p>Each page is grounded in real data points retrieved from primary sources:</p>
+      <ul>
+        <li>Open, High, Low, Close, Previous Close, traded volume.</li>
+        <li>Average daily volume (10-day and 3-month) for volume-vs-average context.</li>
+        <li>52-week high, 52-week low, position within 52-week range.</li>
+        <li>Sector classification and the parent index (e.g. Nifty 50 component).</li>
+        <li>Today&apos;s Nifty 50 change for relative performance.</li>
+        <li>News items from the last 48 hours mentioning the company or its sector.</li>
+      </ul>
+
+      <h2>3. News Retrieval</h2>
+      <p>For each mover, we query Google News and aggregator APIs for the company&apos;s ticker, company name, and primary product/segment keywords. Items older than 48 hours are excluded. Items must come from a recognized publisher (Reuters, PTI, Moneycontrol, Economic Times, Business Standard, Mint, Bloomberg, or company filings on NSE/BSE).</p>
+
+      <h2>4. AI-Assisted Drafting</h2>
+      <p>The narrative explanation is drafted by a retrieval-augmented language model (Google Gemini family) with the following safeguards:</p>
+      <ul>
+        <li><strong>Grounded context.</strong> The model is given the real price data, real volume data, and the retrieved news items. It is instructed to cite only information present in this context.</li>
+        <li><strong>Anti-templating.</strong> The system prompt forbids generic phrases (e.g., &quot;rose on broader market sentiment&quot;, &quot;investors should monitor&quot;). Repeated phrases across pages are detected and regenerated.</li>
+        <li><strong>Low temperature for facts.</strong> Temperature is set to 0.4 or lower for sections containing numeric claims.</li>
+        <li><strong>Hallucination check.</strong> A second model pass verifies that every number in the draft is present in the input data.</li>
+      </ul>
+
+      <h2>5. Quality Gate (Skip Conditions)</h2>
+      <p>A page is <strong>not published</strong> if any of the following are true:</p>
+      <ul>
+        <li>Fewer than 800 words of unique analysis after boilerplate is excluded.</li>
+        <li>Fewer than 5 distinct data points specific to this stock on this day.</li>
+        <li>Zero news items retrieved for the company in the last 48 hours <em>and</em> the move is &lt; 3% (i.e., not large enough to warrant a sector/macro-only explanation).</li>
+        <li>Detected duplicate phrases (8+ words verbatim) with any other published page.</li>
+      </ul>
+
+      <h2>6. Page Structure</h2>
+      <p>Every stock page follows the same five-section searcher-intent structure:</p>
+      <ol>
+        <li><strong>What happened</strong> — price action and magnitude in one sentence.</li>
+        <li><strong>Why</strong> — 2 to 3 specific reasons with cited evidence.</li>
+        <li><strong>Context</strong> — sector performance, peer movement, technical position within 52-week range.</li>
+        <li><strong>What&apos;s next</strong> — upcoming events (earnings, ex-dates), levels to watch.</li>
+        <li><strong>Risks</strong> — what could reverse the move.</li>
+      </ol>
+
+      <h2>7. Editorial Review</h2>
+      <p>The Markets Desk samples published pages each day and corrects any errors promptly per our <Link href="/corrections-policy">Corrections Policy</Link>.</p>
+
+      <h2>8. Limits We Acknowledge</h2>
+      <ul>
+        <li>We are not SEBI-registered investment advisors. Nothing on the site is investment advice.</li>
+        <li>News retrieval can miss sources behind paywalls.</li>
+        <li>Sector and macro context can over-attribute movement when the true cause is unknown.</li>
+        <li>AI-generated text, even when grounded, can occasionally rephrase facts in subtly inaccurate ways. We rely on automated and human checks to catch these.</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>Methodology questions: <a href="mailto:editor@niftypulse360.com">editor@niftypulse360.com</a>.</p>
+    </div>
+  )
+}

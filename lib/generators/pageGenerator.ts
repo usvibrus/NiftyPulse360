@@ -10,6 +10,8 @@ import { generateStockSlug, generateIndexSlug, generateMetalSlug, generateCommod
 import { generateStockTitle, generateIndexTitle, generateMetalTitle, generateCommodityTitle, generateCurrencyTitle } from './titleGenerator'
 import { generateStockContent, generateIndexContent, generateMetalContent, generateCommodityContent, generateCurrencyContent } from './contentGenerator'
 import { nowIST } from '@/lib/utils/dateUtils'
+import { pingNewUrl } from '@/lib/seo/indexingService'
+import { qualityGate } from './qualityGate'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -78,6 +80,25 @@ export async function generateStockPages() {
           `${stock.companyName} stock news`,
         ]
 
+        // QUALITY GATE: skip pages with thin content (< 800 words, < 5 data points, or no news + small move)
+        const stockDataPoints = [
+          stock.openPrice, stock.closePrice, stock.highPrice, stock.lowPrice,
+          stock.volume, stock.avgVolume, stock.week52High, stock.week52Low,
+          stock.marketCap, stock.changePercent, stock.changeAmount,
+        ].filter(v => typeof v === 'number' && v > 0).length
+
+        const gate = qualityGate({
+          pageContent,
+          news,
+          changePercent: stock.changePercent,
+          dataPointCount: stockDataPoints,
+        })
+        if (!gate.pass) {
+          console.log(`[pageGenerator] Skipping ${stock.symbol} (quality gate): ${gate.reasons.join('; ')}`)
+          stats.skipped++
+          continue
+        }
+
         await prisma.stockEvent.create({
           data: {
             slug, symbol: stock.symbol, companyName: stock.companyName, exchange: stock.exchange,
@@ -100,6 +121,9 @@ export async function generateStockPages() {
           create: { url: `${process.env.NEXT_PUBLIC_SITE_URL}/stocks/${slug}`, pageType: 'stock' },
           update: {},
         })
+
+        // Immediate post-publish ping (Google Indexing API + IndexNow + WebSub + sitemap)
+        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/stocks/${slug}`).catch(() => {})
 
         stats.created++
       } catch (error) {
@@ -149,6 +173,8 @@ export async function generateIndexPages() {
           update: {},
         })
 
+        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/indices/${slug}`).catch(() => {})
+
         stats.created++
       } catch (error) {
         console.error(`[pageGenerator] Failed for ${index.indexName}:`, error)
@@ -196,6 +222,8 @@ export async function generateMetalPages() {
           create: { url: `${process.env.NEXT_PUBLIC_SITE_URL}/gold/${slug}`, pageType: 'metal' },
           update: {},
         })
+
+        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/gold/${slug}`).catch(() => {})
 
         stats.created++
       } catch (error) {
@@ -245,6 +273,8 @@ export async function generateCommodityPages() {
           update: {},
         })
 
+        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`).catch(() => {})
+
         stats.created++
       } catch (error) {
         console.error(`[pageGenerator] Failed for ${commodity.commodity}:`, error)
@@ -278,6 +308,8 @@ export async function generateCommodityPages() {
           create: { url: `${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`, pageType: 'currency' },
           update: {},
         })
+
+        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`).catch(() => {})
 
         stats.created++
       } catch (error) {

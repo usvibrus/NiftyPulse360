@@ -12,15 +12,58 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const event = await prisma.stockEvent.findUnique({ where: { slug }, select: { metaTitle: true, metaDesc: true, slug: true, symbol: true, changePercent: true, eventType: true } })
+  const event = await prisma.stockEvent.findUnique({
+    where: { slug },
+    select: {
+      metaTitle: true, metaDesc: true, slug: true, symbol: true, companyName: true,
+      changePercent: true, eventType: true, sector: true, keywords: true,
+      publishedAt: true, updatedAt: true,
+    },
+  })
   if (!event) return { title: 'Not Found' }
-  const ogImage = `${process.env.NEXT_PUBLIC_SITE_URL}/api/og?title=${encodeURIComponent(event.metaTitle)}&symbol=${event.symbol}&change=${event.changePercent.toFixed(1)}%25&type=${event.eventType}`
+
+  const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
+  const ogImage = `${SITE}/api/og?title=${encodeURIComponent(event.metaTitle)}&symbol=${event.symbol}&change=${event.changePercent.toFixed(1)}%25&type=${event.eventType}`
+  const tags = [
+    event.symbol,
+    event.companyName,
+    'NSE',
+    event.sector || 'Stocks',
+    `${event.companyName} share price`,
+    `why ${event.symbol} ${event.eventType === 'RISE' ? 'rose' : 'fell'} today`,
+  ]
+  const newsKeywords = [event.symbol, `${event.companyName} share price today`, `NSE ${event.symbol}`, `${event.companyName} ${event.eventType === 'RISE' ? 'rally' : 'decline'}`]
+
   return {
     title: event.metaTitle,
     description: event.metaDesc,
     alternates: { canonical: `/stocks/${event.slug}` },
-    openGraph: { title: event.metaTitle, description: event.metaDesc, type: 'article', images: [{ url: ogImage, width: 1200, height: 630 }] },
-    twitter: { card: 'summary_large_image', images: [ogImage] },
+    keywords: [...(event.keywords || []), ...tags],
+    authors: [{ name: 'Market Data Desk', url: `${SITE}/authors/market-desk` }],
+    openGraph: {
+      title: event.metaTitle,
+      description: event.metaDesc,
+      type: 'article',
+      url: `${SITE}/stocks/${event.slug}`,
+      siteName: 'NiftyPulse360',
+      locale: 'en_IN',
+      publishedTime: event.publishedAt.toISOString(),
+      modifiedTime: event.updatedAt.toISOString(),
+      authors: [`${SITE}/authors/market-desk`],
+      section: 'Stocks',
+      tags,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: event.metaTitle }],
+    },
+    twitter: { card: 'summary_large_image', title: event.metaTitle, description: event.metaDesc, images: [ogImage], creator: '@niftypulse360' },
+    other: {
+      'news_keywords': newsKeywords.join(', '),
+      'article:published_time': event.publishedAt.toISOString(),
+      'article:modified_time': event.updatedAt.toISOString(),
+      'article:author': `${SITE}/authors/market-desk`,
+      'article:section': 'Stocks',
+      'article:tag': tags.join(','),
+      'standout': `${SITE}/stocks/${event.slug}`,
+    },
   }
 }
 
@@ -80,6 +123,10 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
         dateModified={event.updatedAt.toISOString()}
         description={event.metaDesc}
         url={pageUrl}
+        image={`${siteUrl}/api/og?title=${encodeURIComponent(event.metaTitle)}&symbol=${event.symbol}&change=${event.changePercent.toFixed(1)}%25&type=${event.eventType}`}
+        articleSection="Stocks"
+        keywords={[...(event.keywords || []), event.symbol, event.companyName, 'NSE', event.sector || 'Stocks']}
+        about={{ type: 'Corporation', name: event.companyName, tickerSymbol: event.symbol, exchange: 'NSE' }}
       />
       <BreadcrumbSchema items={breadcrumbItems} />
       {faqItems.length > 0 && <FAQSchema items={faqItems} />}
@@ -96,8 +143,27 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
           <h1 className="text-xl md:text-2xl font-bold text-[#1A1A1A] leading-tight mb-2">
             Why Did {event.companyName} ({event.symbol}) Share Price {event.eventType === 'RISE' ? 'Rise' : 'Fall'} {event.changePercent.toFixed(2)}% Today?
           </h1>
-          <div className="text-xs text-[#666] mb-4">
-            {format(event.publishedAt, 'dd MMM yyyy, h:mm a')} IST • {event.exchange} • {event.sector || 'Stocks'}
+          <div className="text-xs text-[#666] mb-4 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href="/authors/market-desk" className="font-semibold text-[#1565C0] hover:underline">By Market Data Desk</Link>
+            <span aria-hidden>•</span>
+            <span>Published {format(event.publishedAt, 'dd MMM yyyy, h:mm a')} IST</span>
+            {event.updatedAt.getTime() !== event.publishedAt.getTime() && (
+              <>
+                <span aria-hidden>•</span>
+                <span>Updated {format(event.updatedAt, 'dd MMM yyyy, h:mm a')} IST</span>
+              </>
+            )}
+            <span aria-hidden>•</span>
+            <span>{event.exchange} • {event.sector || 'Stocks'}</span>
+          </div>
+
+          <div className="bg-[#F5F7FA] border border-[#E0E0E0] rounded-md px-3 py-2 mb-4 text-xs text-[#444] flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="inline-flex items-center gap-1 font-semibold text-[#1565C0]">🤖 Auto-generated, reviewed by Markets Desk</span>
+            <span aria-hidden>•</span>
+            <span>Price data: NSE/BSE</span>
+            <span aria-hidden>•</span>
+            <span>News: Reuters, PTI, ET, Moneycontrol, company filings</span>
+            <Link href="/methodology" className="text-[#1565C0] hover:underline ml-auto">How we make these →</Link>
           </div>
 
           <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER || ''} />
@@ -136,9 +202,17 @@ export default async function StockEventPage({ params }: { params: Promise<{ slu
 
           {/* Internal links bar - GUIDE 10.1 */}
           <div className="bg-[#F5F7FA] border border-[#E0E0E0] rounded-md p-3 mb-6 flex flex-wrap gap-3 text-sm">
+            <Link href={`/stocks/symbol/${event.symbol.toLowerCase()}`} className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold">
+              📊 All {event.symbol} analyses →
+            </Link>
+            {event.sector && (
+              <Link href={`/sectors/${event.sector.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold">
+                🏭 {event.sector} sector →
+              </Link>
+            )}
             {previousDay && (
               <Link href={`/stocks/${previousDay.slug}`} className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold">
-                ← See {event.symbol} on {format(previousDay.eventDate, 'dd MMM')} ({previousDay.eventType === 'RISE' ? '▲' : '▼'} {previousDay.changePercent.toFixed(1)}%)
+                ← {event.symbol} on {format(previousDay.eventDate, 'dd MMM')} ({previousDay.eventType === 'RISE' ? '▲' : '▼'} {previousDay.changePercent.toFixed(1)}%)
               </Link>
             )}
             <Link href="/indices" className="inline-flex items-center gap-1 text-[#1565C0] hover:underline font-semibold ml-auto">
