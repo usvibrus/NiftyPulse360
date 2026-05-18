@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/db/prisma'
-import { startOfDay } from 'date-fns'
 
 export async function postToDevTo() {
   const apiKey = process.env.DEV_TO_API_KEY
@@ -9,9 +8,9 @@ export async function postToDevTo() {
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({
-    where: { devtoPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
-    take: 2,
-    orderBy: { changePercent: 'desc' },
+    where: { devtoPosted: false, isPublished: true },
+    take: 10,
+    orderBy: { publishedAt: 'desc' },
   })
 
   for (const s of stocks) {

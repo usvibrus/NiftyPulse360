@@ -1,6 +1,5 @@
 import tumblr from 'tumblr.js'
 import { prisma } from '@/lib/db/prisma'
-import { startOfDay } from 'date-fns'
 
 function getClient() {
   const { TUMBLR_CONSUMER_KEY, TUMBLR_CONSUMER_SECRET, TUMBLR_TOKEN, TUMBLR_TOKEN_SECRET } = process.env
@@ -21,9 +20,9 @@ export async function postToTumblr() {
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({
-    where: { tumblrPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
-    take: 2,
-    orderBy: { changePercent: 'desc' },
+    where: { tumblrPosted: false, isPublished: true },
+    take: 10,
+    orderBy: { publishedAt: 'desc' },
   })
 
   for (const s of stocks) {

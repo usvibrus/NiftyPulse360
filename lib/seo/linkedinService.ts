@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
-import { startOfDay } from 'date-fns'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -41,13 +40,13 @@ export async function postToLinkedIn() {
       const personUrn = `urn:li:person:${profileRes.data.sub}`
 
       const stocks = await prisma.stockEvent.findMany({
-        where: { tweetPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
-        take: 3,
-        orderBy: { changePercent: 'desc' },
+        where: { tweetPosted: false, isPublished: true },
+        take: 10,
+        orderBy: { publishedAt: 'desc' },
       })
 
       for (const s of stocks) {
-        if (posted >= 3) break
+        if (posted >= 10) break
         const verb = s.eventType === 'RISE' ? 'rose' : 'fell'
         const emoji = s.eventType === 'RISE' ? '📈' : '📉'
         const text = `${emoji} ${s.companyName} (${s.symbol}) shares ${verb} ${s.changePercent.toFixed(1)}% today on NSE\n\nFind out why: ${siteUrl}/stocks/${s.slug}\n\n#StockMarket #NSE #IndianStocks #${s.symbol}`
