@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
+import { startOfDay } from 'date-fns'
 
 export async function postToTelegraph() {
   const token = process.env.TELEGRAPH_ACCESS_TOKEN
@@ -8,7 +9,7 @@ export async function postToTelegraph() {
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({
-    where: { telegraphPosted: false, isPublished: true },
+    where: { telegraphPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
     take: 2,
     orderBy: { changePercent: 'desc' },
   })

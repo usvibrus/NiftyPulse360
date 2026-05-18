@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
+import { startOfDay } from 'date-fns'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -31,7 +32,7 @@ export async function postToPinterest() {
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({
-    where: { isPublished: true },
+    where: { isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
     take: 3,
     orderBy: { publishedAt: 'desc' },
     select: { slug: true, companyName: true, symbol: true, eventType: true, changePercent: true, metaTitle: true, metaDesc: true },

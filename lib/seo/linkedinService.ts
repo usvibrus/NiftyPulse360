@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
+import { startOfDay } from 'date-fns'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -40,7 +41,7 @@ export async function postToLinkedIn() {
       const personUrn = `urn:li:person:${profileRes.data.sub}`
 
       const stocks = await prisma.stockEvent.findMany({
-        where: { tweetPosted: false, isPublished: true },
+        where: { tweetPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } },
         take: 3,
         orderBy: { changePercent: 'desc' },
       })

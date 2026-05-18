@@ -1,5 +1,6 @@
 import { TwitterApi } from 'twitter-api-v2'
 import { prisma } from '@/lib/db/prisma'
+import { startOfDay } from 'date-fns'
 
 function getClient(): TwitterApi | null {
   const appKey = process.env.TWITTER_API_KEY
@@ -22,7 +23,7 @@ export async function postNewPages() {
   let tweeted = 0
 
   // Stock events
-  const stocks = await prisma.stockEvent.findMany({ where: { tweetPosted: false, isPublished: true }, take: 5, orderBy: { changePercent: 'desc' } })
+  const stocks = await prisma.stockEvent.findMany({ where: { tweetPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } }, take: 5, orderBy: { changePercent: 'desc' } })
   for (const s of stocks) {
     if (tweeted >= 15) break
     const emoji = s.eventType === 'RISE' ? '🚀' : '📉'
@@ -39,7 +40,7 @@ export async function postNewPages() {
   }
 
   // Index events
-  const indices = await prisma.indexEvent.findMany({ where: { tweetPosted: false, isPublished: true }, take: 3 })
+  const indices = await prisma.indexEvent.findMany({ where: { tweetPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } }, take: 3 })
   for (const i of indices) {
     if (tweeted >= 15) break
     const emoji = i.eventType === 'RISE' ? '📈' : '📉'
@@ -56,7 +57,7 @@ export async function postNewPages() {
   }
 
   // Metal events
-  const metals = await prisma.metalEvent.findMany({ where: { tweetPosted: false, isPublished: true }, take: 2 })
+  const metals = await prisma.metalEvent.findMany({ where: { tweetPosted: false, isPublished: true, publishedAt: { gte: startOfDay(new Date()) } }, take: 2 })
   for (const m of metals) {
     if (tweeted >= 15) break
     const emoji = '🪙'
