@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db/prisma'
 import { format } from 'date-fns'
 import LiveTicker from '@/components/ui/LiveTicker'
+import LiveSidebar from '@/components/ui/LiveSidebar'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,38 +93,7 @@ export default async function HomePage() {
         <div className="lg:w-[35%]">
           {/* Market Snapshot Widget */}
           <div className="mb-4 sticky top-[120px]">
-            <div className="section-header"><span>Market Snapshot</span></div>
-            <div className="bg-white border border-t-0 border-[#E0E0E0]">
-              {indices.map(i => (
-                <Link key={i.slug} href={`/indices/${i.slug}`} className="flex justify-between items-center p-3 border-b border-[#E0E0E0] last:border-b-0 hover:bg-[#F5F7FA]">
-                  <span className="font-semibold text-sm">{i.indexName}</span>
-                  <div className="text-right">
-                    <div className="font-mono-price text-sm font-bold">{i.closeValue.toLocaleString('en-IN')}</div>
-                    <div className={`text-xs font-bold ${i.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>
-                      {i.eventType === 'RISE' ? '▲' : '▼'} {i.changePercent.toFixed(2)}%
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Gold Rate Widget */}
-            <div className="mt-4">
-              <div className="section-header"><span>Gold Rate Today</span></div>
-              <div className="bg-white border border-t-0 border-[#E0E0E0] p-4">
-                {metals.length > 0 ? metals.map(m => (
-                  <Link key={m.slug} href={`/gold/${m.slug}`} className="flex justify-between items-center py-2 border-b border-[#E0E0E0] last:border-b-0">
-                    <span className="text-sm font-semibold">{m.metal} {m.carat || ''}</span>
-                    <div className="text-right">
-                      <span className="font-mono-price font-bold">₹{m.pricePerGram.toFixed(0)}/g</span>
-                      <span className={`ml-2 text-xs font-bold ${m.eventType === 'RISE' ? 'text-rise' : 'text-fall'}`}>
-                        {m.eventType === 'RISE' ? '▲' : '▼'} {m.changePercent.toFixed(1)}%
-                      </span>
-                    </div>
-                  </Link>
-                )) : <p className="text-sm text-[#666]">No gold data yet</p>}
-              </div>
-            </div>
+            <LiveSidebar />
 
             {/* Top News Widget */}
             <div className="mt-4">
