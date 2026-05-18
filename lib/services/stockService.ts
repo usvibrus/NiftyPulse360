@@ -1,5 +1,6 @@
 import { NseIndia } from 'stock-nse-india'
-import yahooFinance from 'yahoo-finance2'
+import YahooFinance from 'yahoo-finance2'
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 
 export interface StockMoverData {
   symbol: string

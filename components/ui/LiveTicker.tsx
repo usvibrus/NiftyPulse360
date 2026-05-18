@@ -18,6 +18,8 @@ const LABELS: Record<string, string> = {
   'SI=F': 'SILVER',
 }
 
+const METALS = new Set(['GC=F', 'SI=F'])
+
 async function fetchPrices(): Promise<TickerData[]> {
   try {
     const res = await fetch('/api/prices')
@@ -46,7 +48,7 @@ function isMarketHours() {
   return day >= 1 && day <= 5 && time >= 540 && time <= 960
 }
 
-function PriceCell({ current, prev, isUp }: { current: number; prev: number; isUp: boolean }) {
+function PriceCell({ current, prev, isUp, symbol }: { current: number; prev: number; isUp: boolean; symbol: string }) {
   const [flash, setFlash] = useState('')
 
   useEffect(() => {
@@ -56,13 +58,14 @@ function PriceCell({ current, prev, isUp }: { current: number; prev: number; isU
     return () => clearTimeout(t)
   }, [current, prev])
 
+  const isMetal = METALS.has(symbol)
   const formatted = current > 10000
     ? current.toLocaleString('en-IN', { maximumFractionDigits: 0 })
     : current.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
     <div className={`font-mono-price text-xl font-bold text-[#1A1A1A] mt-1 transition-colors duration-300 ${flash}`}>
-      {current > 0 ? (current > 1000 ? formatted : `$${formatted}`) : '—'}
+      {current > 0 ? `${isMetal ? '₹' : ''}${formatted}${isMetal ? '/g' : ''}` : '—'}
     </div>
   )
 }
@@ -110,7 +113,7 @@ export default function LiveTicker() {
                 </span>
               )}
             </div>
-            <PriceCell current={item.price} prev={prev} isUp={item.isUp} />
+            <PriceCell current={item.price} prev={prev} isUp={item.isUp} symbol={item.symbol} />
             <div className={`text-sm font-bold mt-1 ${item.isUp ? 'text-rise' : 'text-fall'}`}>
               {item.isUp ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)} ({Math.abs(item.changePercent).toFixed(2)}%)
             </div>

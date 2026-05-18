@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Mono:wght@500&display=swap');
 
 @theme inline {
   --color-primary: #1565C0;
