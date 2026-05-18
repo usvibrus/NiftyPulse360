@@ -32,7 +32,7 @@ export async function postToPinterest() {
 
   const stocks = await prisma.stockEvent.findMany({
     where: { isPublished: true, tweetPosted: false },
-    take: 10,
+    take: 3,
     orderBy: { publishedAt: 'desc' },
     select: { slug: true, companyName: true, symbol: true, eventType: true, changePercent: true, metaTitle: true, metaDesc: true },
   })

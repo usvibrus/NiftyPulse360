@@ -9,7 +9,7 @@ export async function postToDevTo() {
 
   const stocks = await prisma.stockEvent.findMany({
     where: { devtoPosted: false, isPublished: true },
-    take: 10,
+    take: 2,
     orderBy: { publishedAt: 'desc' },
   })
 

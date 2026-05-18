@@ -41,7 +41,7 @@ export async function postToLinkedIn() {
 
       const stocks = await prisma.stockEvent.findMany({
         where: { tweetPosted: false, isPublished: true },
-        take: 10,
+        take: 3,
         orderBy: { publishedAt: 'desc' },
       })
 

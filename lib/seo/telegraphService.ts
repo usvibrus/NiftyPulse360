@@ -9,7 +9,7 @@ export async function postToTelegraph() {
 
   const stocks = await prisma.stockEvent.findMany({
     where: { telegraphPosted: false, isPublished: true },
-    take: 10,
+    take: 3,
     orderBy: { publishedAt: 'desc' },
   })
 

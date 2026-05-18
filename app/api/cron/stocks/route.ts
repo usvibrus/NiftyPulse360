@@ -5,7 +5,6 @@ import { processIndexingQueue } from '@/lib/seo/indexingService'
 import { postToLinkedIn } from '@/lib/seo/linkedinService'
 import { postToPinterest } from '@/lib/seo/pinterestService'
 import { postToDevTo } from '@/lib/seo/devtoService'
-import { postToTumblr } from '@/lib/seo/tumblrService'
 import { postToTelegraph } from '@/lib/seo/telegraphService'
 
 export async function POST(request: Request) {
@@ -19,9 +18,8 @@ export async function POST(request: Request) {
     const linkedin = await postToLinkedIn()
     const pinterest = await postToPinterest()
     const devto = await postToDevTo()
-    const tumblr = await postToTumblr()
     const telegraph = await postToTelegraph()
-    return NextResponse.json({ success: true, ...result, indexing, linkedin, pinterest, devto, tumblr, telegraph })
+    return NextResponse.json({ success: true, ...result, indexing, linkedin, pinterest, devto, telegraph })
   } catch (error) {
     console.error('[cron/stocks] Error:', error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })
