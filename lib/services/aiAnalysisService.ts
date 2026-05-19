@@ -130,7 +130,7 @@ async function generateWithOpenRouter(stock: StockAnalysisInput, news: NewsItem[
   const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
 
-  const model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
+  const model = process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b:free'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 
   try {
@@ -214,18 +214,18 @@ function fallbackFAQ(stock: StockAnalysisInput, news: NewsItem[]): { question: s
 }
 
 // ──────────────────────────────────────────
-// MAIN ENTRY: Gemini → OpenRouter → static fallback
+// MAIN ENTRY: OpenRouter → Gemini → static fallback
 // ──────────────────────────────────────────
 export async function generateStockAnalysis(stock: StockAnalysisInput, news: NewsItem[]): Promise<AnalysisResult> {
-  // Try Gemini first
-  const gemini = await generateWithGemini(stock, news)
-  if (gemini) return gemini
-
-  // Fall back to OpenRouter
+  // Try OpenRouter first (gpt-oss-120b free)
   const openrouter = await generateWithOpenRouter(stock, news)
-  if (openrouter) {
-    console.log(`[aiAnalysis] Used OpenRouter fallback for ${stock.symbol}`)
-    return openrouter
+  if (openrouter) return openrouter
+
+  // Fall back to Gemini
+  const gemini = await generateWithGemini(stock, news)
+  if (gemini) {
+    console.log(`[aiAnalysis] Used Gemini fallback for ${stock.symbol}`)
+    return gemini
   }
 
   // Last resort: static template
