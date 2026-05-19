@@ -1,30 +1,97 @@
 import { NextResponse } from 'next/server'
 import YahooFinance from 'yahoo-finance2'
 import { prisma } from '@/lib/db/prisma'
+import { fetchStooqIndex } from '@/lib/services/stooqService'
+import { fetchExchangeRateMetals } from '@/lib/services/exchangeRateService'
+import { fetchTwelveDataQuote } from '@/lib/services/twelveDataService'
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 const TROY_OZ_TO_GRAM = 31.1035
 let cache: { data: unknown; ts: number } | null = null
 
-// Reject any changePercent with absurd magnitude (data corruption indicator)
 function safePct(pct: number | null | undefined): number {
   if (typeof pct !== 'number' || !isFinite(pct)) return 0
-  if (Math.abs(pct) > 50) return 0 // cap at sanity threshold
+  if (Math.abs(pct) > 50) return 0
   return pct
 }
 
-async function fetchMetalPrices(): Promise<{ gold: number; silver: number } | null> {
+// PRIMARY: Twelve Data (free 800/day, reliable for Indian indices)
+// FALLBACK 1: Yahoo Finance (often blocked on cloud IPs)
+// FALLBACK 2: Stooq (only works for some symbols, not Indian indices)
+// FALLBACK 3: DB latest IndexEvent
+async function fetchIndices(): Promise<{ symbol: string; price: number; change: number; changePercent: number }[]> {
+  const out: { symbol: string; price: number; change: number; changePercent: number }[] = []
+
+  // 1. Try Twelve Data first
+  const [niftyTd, sensexTd] = await Promise.all([
+    fetchTwelveDataQuote('^NSEI'),
+    fetchTwelveDataQuote('^BSESN'),
+  ])
+  if (niftyTd) out.push({ ...niftyTd, changePercent: safePct(niftyTd.changePercent) })
+  if (sensexTd) out.push({ ...sensexTd, changePercent: safePct(sensexTd.changePercent) })
+
+  // 2. Fill gaps with Yahoo
+  const haveNifty = out.some(i => i.symbol === '^NSEI')
+  const haveSensex = out.some(i => i.symbol === '^BSESN')
+
+  if (!haveNifty || !haveSensex) {
+    const yahooResults = await Promise.allSettled([
+      !haveNifty ? yahooFinance.quote('^NSEI') : Promise.resolve(null),
+      !haveSensex ? yahooFinance.quote('^BSESN') : Promise.resolve(null),
+    ])
+    yahooResults.forEach((r, i) => {
+      const sym = i === 0 ? '^NSEI' : '^BSESN'
+      if (r.status === 'fulfilled' && r.value) {
+        const q = r.value as any
+        if (q.regularMarketPrice) {
+          out.push({
+            symbol: sym,
+            price: q.regularMarketPrice,
+            change: q.regularMarketChange ?? 0,
+            changePercent: safePct(q.regularMarketChangePercent),
+          })
+        }
+      }
+    })
+  }
+
+  // 3. Try Stooq as last network fallback (rarely works for Indian indices but free to try)
+  const stillMissingNifty = !out.some(i => i.symbol === '^NSEI')
+  const stillMissingSensex = !out.some(i => i.symbol === '^BSESN')
+  if (stillMissingNifty || stillMissingSensex) {
+    const [niftyStooq, sensexStooq] = await Promise.all([
+      stillMissingNifty ? fetchStooqIndex('^NSEI') : Promise.resolve(null),
+      stillMissingSensex ? fetchStooqIndex('^BSESN') : Promise.resolve(null),
+    ])
+    if (niftyStooq) out.push({ ...niftyStooq, symbol: '^NSEI', changePercent: safePct(niftyStooq.changePercent) })
+    if (sensexStooq) out.push({ ...sensexStooq, symbol: '^BSESN', changePercent: safePct(sensexStooq.changePercent) })
+  }
+
+  return out
+}
+
+async function fetchMetalPriceAPI(): Promise<{ gold: number; silver: number } | null> {
   try {
     const key = process.env.METALPRICE_API_KEY
     if (!key) return null
-    const res = await fetch(`https://api.metalpriceapi.com/v1/latest?api_key=${key}&base=INR&currencies=XAU,XAG`)
+    const res = await fetch(`https://api.metalpriceapi.com/v1/latest?api_key=${key}&base=INR&currencies=XAU,XAG`, {
+      signal: AbortSignal.timeout(8000),
+    })
     if (!res.ok) return null
     const data = await res.json()
+    if (!data.rates?.INRXAU || !data.rates?.INRXAG) return null
     return {
       gold: (1 / data.rates.INRXAU) / TROY_OZ_TO_GRAM,
       silver: (1 / data.rates.INRXAG) / TROY_OZ_TO_GRAM,
     }
   } catch { return null }
+}
+
+// PRIMARY: ExchangeRate.host (free, unlimited)
+// FALLBACK 1: MetalpriceAPI (paid key)
+// FALLBACK 2: DB
+async function fetchMetals(): Promise<{ gold: number; silver: number } | null> {
+  return (await fetchExchangeRateMetals()) ?? (await fetchMetalPriceAPI())
 }
 
 export async function GET() {
@@ -34,12 +101,9 @@ export async function GET() {
   }
 
   try {
-    const [indexResults, metalPrices, dbMetals, dbIndices] = await Promise.all([
-      Promise.allSettled([
-        yahooFinance.quote('^NSEI'),
-        yahooFinance.quote('^BSESN'),
-      ]),
-      fetchMetalPrices(),
+    const [indices, metalPrices, dbMetals, dbIndices] = await Promise.all([
+      fetchIndices(),
+      fetchMetals(),
       prisma.metalEvent.findMany({
         where: { isPublished: true, metal: { in: ['GOLD', 'SILVER'] } },
         orderBy: { publishedAt: 'desc' },
@@ -54,42 +118,22 @@ export async function GET() {
       }),
     ])
 
-    // Log Yahoo failures explicitly so it shows in Railway logs
-    indexResults.forEach((r, i) => {
-      const sym = i === 0 ? '^NSEI' : '^BSESN'
-      if (r.status === 'rejected') {
-        console.warn(`[prices] Yahoo Finance failed for ${sym}:`, r.reason instanceof Error ? r.reason.message : r.reason)
-      }
-    })
-
-    const yahooIndices = indexResults
-      .filter(r => r.status === 'fulfilled' && r.value)
-      .map(r => {
-        const q = (r as PromiseFulfilledResult<any>).value
-        return {
-          symbol: q.symbol,
-          price: q.regularMarketPrice,
-          change: q.regularMarketChange,
-          changePercent: safePct(q.regularMarketChangePercent),
-        }
-      })
-
-    // Fallback to DB for any index Yahoo couldn't fetch
-    const haveYahooNifty = yahooIndices.some(i => i.symbol === '^NSEI')
-    const haveYahooSensex = yahooIndices.some(i => i.symbol === '^BSESN')
+    // DB fallback for any missing index
+    const haveNifty = indices.some(i => i.symbol === '^NSEI')
+    const haveSensex = indices.some(i => i.symbol === '^BSESN')
     const niftyDb = dbIndices.find(d => d.indexName === 'Nifty 50')
     const sensexDb = dbIndices.find(d => d.indexName === 'Sensex')
 
-    const indices = [...yahooIndices]
-    if (!haveYahooNifty && niftyDb && niftyDb.closeValue > 0) {
+    if (!haveNifty && niftyDb && niftyDb.closeValue > 0) {
       const pct = safePct(niftyDb.eventType === 'FALL' ? -niftyDb.changePercent : niftyDb.changePercent)
       indices.push({ symbol: '^NSEI', price: niftyDb.closeValue, change: niftyDb.changePoints * (niftyDb.eventType === 'FALL' ? -1 : 1), changePercent: pct })
     }
-    if (!haveYahooSensex && sensexDb && sensexDb.closeValue > 0) {
+    if (!haveSensex && sensexDb && sensexDb.closeValue > 0) {
       const pct = safePct(sensexDb.eventType === 'FALL' ? -sensexDb.changePercent : sensexDb.changePercent)
       indices.push({ symbol: '^BSESN', price: sensexDb.closeValue, change: sensexDb.changePoints * (sensexDb.eventType === 'FALL' ? -1 : 1), changePercent: pct })
     }
 
+    // Metals
     const metalItems: any[] = []
     const goldDb = dbMetals.find(m => m.metal === 'GOLD')
     const silverDb = dbMetals.find(m => m.metal === 'SILVER')
@@ -112,7 +156,7 @@ export async function GET() {
     if (data.length > 0) cache = { data, ts: now }
     return NextResponse.json(data, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } })
   } catch (e) {
-    console.error('Prices API error:', e)
+    console.error('[prices] fatal error:', e instanceof Error ? e.message : e)
     return NextResponse.json(cache?.data || [], { status: cache ? 200 : 500 })
   }
 }
