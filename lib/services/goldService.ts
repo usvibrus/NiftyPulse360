@@ -1,5 +1,5 @@
-import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
+import { fetchRapidApiMetals } from './rapidApiMetalsService'
 
 export interface MetalData {
   metal: 'GOLD' | 'SILVER'
@@ -13,96 +13,71 @@ export interface MetalData {
 
 const TROY_OUNCE_TO_GRAMS = 31.1035
 
-// Sanity bounds (INR per troy ounce). Real values: gold ~₹4-7L/oz, silver ~₹70-150K/oz.
-// Anything outside these ranges is corrupted data — refuse to use it.
+// Sanity bounds (INR per gram). Rejects corrupted records.
 const PLAUSIBLE_RANGES = {
-  GOLD: { min: 100000, max: 2000000 },   // ₹1L to ₹20L per ounce
-  SILVER: { min: 10000, max: 500000 },   // ₹10K to ₹5L per ounce
+  GOLD: { minPerGram: 3000, maxPerGram: 60000 },   // ₹3K to ₹60K per gram
+  SILVER: { minPerGram: 50, maxPerGram: 5000 },    // ₹50 to ₹5K per gram
 } as const
 
-const MAX_DAILY_CHANGE_PCT = 25 // gold/silver almost never move >25% in a day
-
-async function fetchMetalPriceAPI(): Promise<{ goldINR: number; silverINR: number } | null> {
-  try {
-    const res = await axios.get('https://api.metalpriceapi.com/v1/latest', {
-      params: { api_key: process.env.METALPRICE_API_KEY, base: 'INR', currencies: 'XAU,XAG' },
-    })
-    // API returns rates as 1 INR = X ounces, so invert
-    const goldPerOunce = 1 / res.data.rates.INRXAU
-    const silverPerOunce = 1 / res.data.rates.INRXAG
-    return { goldINR: goldPerOunce, silverINR: silverPerOunce }
-  } catch (error) {
-    console.error('[goldService] MetalpriceAPI failed:', error)
-    return null
-  }
-}
-
-async function fetchGoldAPIFallback(): Promise<{ goldINR: number; silverINR: number } | null> {
-  try {
-    const [goldRes, silverRes] = await Promise.all([
-      axios.get('https://www.goldapi.io/api/XAU/INR', { headers: { 'x-access-token': process.env.GOLD_API_KEY } }),
-      axios.get('https://www.goldapi.io/api/XAG/INR', { headers: { 'x-access-token': process.env.GOLD_API_KEY } }),
-    ])
-    return { goldINR: goldRes.data.price, silverINR: silverRes.data.price }
-  } catch (error) {
-    console.error('[goldService] Gold-API fallback failed:', error)
-    return null
-  }
-}
+const MAX_DAILY_CHANGE_PCT = 25
 
 // Find the most recent SANE previous price (skip corrupted records)
-async function getYesterdayPrice(metal: 'GOLD' | 'SILVER'): Promise<number | null> {
+async function getYesterdayPricePerGram(metal: 'GOLD' | 'SILVER'): Promise<number | null> {
   const range = PLAUSIBLE_RANGES[metal]
   const last = await prisma.metalEvent.findFirst({
     where: {
       metal,
-      pricePerOunce: { gte: range.min, lte: range.max },
+      pricePerGram: { gte: range.minPerGram, lte: range.maxPerGram },
     },
     orderBy: { eventDate: 'desc' },
-    select: { pricePerOunce: true },
+    select: { pricePerGram: true },
   })
-  return last?.pricePerOunce ?? null
+  return last?.pricePerGram ?? null
 }
 
-function isPlausiblePrice(metal: 'GOLD' | 'SILVER', pricePerOunce: number): boolean {
+function isPlausiblePerGram(metal: 'GOLD' | 'SILVER', value: number): boolean {
   const range = PLAUSIBLE_RANGES[metal]
-  return pricePerOunce >= range.min && pricePerOunce <= range.max
+  return value >= range.minPerGram && value <= range.maxPerGram
 }
 
 export async function getMetalMovers(): Promise<MetalData[]> {
-  const prices = await fetchMetalPriceAPI() ?? await fetchGoldAPIFallback()
-  if (!prices) return []
+  const prices = await fetchRapidApiMetals()
+  if (!prices) {
+    console.warn('[goldService] RapidAPI metals failed - no metal data this run')
+    return []
+  }
 
   const movers: MetalData[] = []
+  const todayValues: { metal: 'GOLD' | 'SILVER'; pricePerGram: number; carat: string | null }[] = [
+    { metal: 'GOLD', pricePerGram: prices.gold24k, carat: '24K' },
+    { metal: 'SILVER', pricePerGram: prices.silver, carat: null },
+  ]
 
-  for (const [metal, pricePerOunce] of [['GOLD', prices.goldINR], ['SILVER', prices.silverINR]] as const) {
-    // GUARD 1: today's price must itself be plausible
-    if (!isPlausiblePrice(metal, pricePerOunce)) {
-      console.warn(`[goldService] Today's ${metal} price ₹${pricePerOunce.toFixed(2)}/oz is outside plausible range. Skipping.`)
+  for (const { metal, pricePerGram, carat } of todayValues) {
+    if (!isPlausiblePerGram(metal, pricePerGram)) {
+      console.warn(`[goldService] today's ${metal} price ₹${pricePerGram}/g is implausible. Skipping.`)
       continue
     }
 
-    const yesterday = await getYesterdayPrice(metal)
+    const yesterday = await getYesterdayPricePerGram(metal)
     if (!yesterday) {
-      // First run — store baseline only, don't generate movement page
-      console.log(`[goldService] No sane previous ${metal} price found. Storing baseline only.`)
+      console.log(`[goldService] No sane previous ${metal} price. Storing baseline only.`)
       continue
     }
 
-    const changePercent = ((pricePerOunce - yesterday) / yesterday) * 100
+    const changePercent = ((pricePerGram - yesterday) / yesterday) * 100
 
-    // GUARD 2: ignore implausibly large daily moves (data corruption indicator)
     if (Math.abs(changePercent) > MAX_DAILY_CHANGE_PCT) {
-      console.warn(`[goldService] ${metal} daily change ${changePercent.toFixed(2)}% exceeds ${MAX_DAILY_CHANGE_PCT}% threshold. Skipping (likely corrupted baseline).`)
+      console.warn(`[goldService] ${metal} change ${changePercent.toFixed(2)}% exceeds threshold. Skipping (corrupted baseline?).`)
       continue
     }
 
     if (Math.abs(changePercent) < 0.5) continue
 
-    const pricePerGram = pricePerOunce / TROY_OUNCE_TO_GRAMS
+    const pricePerOunce = pricePerGram * TROY_OUNCE_TO_GRAMS
     movers.push({
       metal,
-      carat: metal === 'GOLD' ? '24K' : null,
+      carat,
       eventType: changePercent > 0 ? 'RISE' : 'FALL',
       changePercent: Math.abs(changePercent),
       pricePerGram,

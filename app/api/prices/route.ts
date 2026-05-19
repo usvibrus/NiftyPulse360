@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server'
 import YahooFinance from 'yahoo-finance2'
 import { prisma } from '@/lib/db/prisma'
 import { fetchStooqIndex } from '@/lib/services/stooqService'
-import { fetchExchangeRateMetals } from '@/lib/services/exchangeRateService'
 import { fetchTwelveDataQuote } from '@/lib/services/twelveDataService'
+import { fetchRapidApiMetals } from '@/lib/services/rapidApiMetalsService'
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
-const TROY_OZ_TO_GRAM = 31.1035
 let cache: { data: unknown; ts: number } | null = null
 
 function safePct(pct: number | null | undefined): number {
@@ -70,28 +69,12 @@ async function fetchIndices(): Promise<{ symbol: string; price: number; change: 
   return out
 }
 
-async function fetchMetalPriceAPI(): Promise<{ gold: number; silver: number } | null> {
-  try {
-    const key = process.env.METALPRICE_API_KEY
-    if (!key) return null
-    const res = await fetch(`https://api.metalpriceapi.com/v1/latest?api_key=${key}&base=INR&currencies=XAU,XAG`, {
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (!data.rates?.INRXAU || !data.rates?.INRXAG) return null
-    return {
-      gold: (1 / data.rates.INRXAU) / TROY_OZ_TO_GRAM,
-      silver: (1 / data.rates.INRXAG) / TROY_OZ_TO_GRAM,
-    }
-  } catch { return null }
-}
-
-// PRIMARY: ExchangeRate.host (free, unlimited)
-// FALLBACK 1: MetalpriceAPI (paid key)
-// FALLBACK 2: DB
+// PRIMARY: RapidAPI gold-silver-rates-india (returns INR per gram directly)
+// FALLBACK: DB latest MetalEvent
 async function fetchMetals(): Promise<{ gold: number; silver: number } | null> {
-  return (await fetchExchangeRateMetals()) ?? (await fetchMetalPriceAPI())
+  const result = await fetchRapidApiMetals()
+  if (!result) return null
+  return { gold: result.gold24k, silver: result.silver }
 }
 
 export async function GET() {
