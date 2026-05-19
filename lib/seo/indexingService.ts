@@ -8,7 +8,10 @@ const SITE = () => process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.co
 async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETED' = 'URL_UPDATED'): Promise<boolean> {
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
   const privateKey = process.env.GOOGLE_INDEXING_SA_PRIVATE_KEY
-  if (!email || !privateKey) return false
+  if (!email || !privateKey) {
+    console.warn('[indexing] Google Indexing SA credentials missing - skipping')
+    return false
+  }
 
   try {
     const auth = new google.auth.JWT({
@@ -18,9 +21,11 @@ async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETE
     })
     const indexing = google.indexing({ version: 'v3', auth })
     await indexing.urlNotifications.publish({ requestBody: { url, type } })
+    console.log(`[indexing] Google Indexing OK: ${url}`)
     return true
   } catch (error) {
-    console.error(`[indexing] Google Indexing failed for ${url}:`, error)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`[indexing] Google Indexing failed for ${url}: ${msg.slice(0, 200)}`)
     return false
   }
 }
