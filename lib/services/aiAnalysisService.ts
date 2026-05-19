@@ -120,21 +120,30 @@ async function generateWithGemini(stock: StockAnalysisInput, news: NewsItem[]): 
 }
 
 // ──────────────────────────────────────────
-// PROVIDER 2: Groq (free Llama inference) — fallback
+// PROVIDER 2: OpenRouter (free models) — fallback
+// Set OPENROUTER_API_KEY in env. Pick a free model via OPENROUTER_MODEL.
+// Good free choices (as of 2026): meta-llama/llama-3.3-70b-instruct:free,
+// deepseek/deepseek-chat:free, google/gemini-2.0-flash-exp:free,
+// nvidia/llama-3.1-nemotron-70b-instruct:free
 // ──────────────────────────────────────────
-async function generateWithGroq(stock: StockAnalysisInput, news: NewsItem[]): Promise<AnalysisResult | null> {
-  const key = process.env.GROQ_API_KEY
+async function generateWithOpenRouter(stock: StockAnalysisInput, news: NewsItem[]): Promise<AnalysisResult | null> {
+  const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
 
+  const model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
+
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': siteUrl,
+        'X-Title': 'NiftyPulse360',
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        model,
         messages: [
           { role: 'system', content: 'You are a financial analyst. Respond ONLY with valid JSON, no markdown.' },
           { role: 'user', content: buildPrompt(stock, news) },
@@ -143,11 +152,12 @@ async function generateWithGroq(stock: StockAnalysisInput, news: NewsItem[]): Pr
         max_tokens: 1200,
         response_format: { type: 'json_object' },
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(25000),
     })
 
     if (!res.ok) {
-      console.warn(`[aiAnalysis:groq] HTTP ${res.status} for ${stock.symbol}`)
+      const body = await res.text().catch(() => '')
+      console.warn(`[aiAnalysis:openrouter] HTTP ${res.status} for ${stock.symbol}: ${body.slice(0, 200)}`)
       return null
     }
 
@@ -157,7 +167,7 @@ async function generateWithGroq(stock: StockAnalysisInput, news: NewsItem[]): Pr
     return parseJsonResponse(text)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.warn(`[aiAnalysis:groq] failed for ${stock.symbol}:`, msg.slice(0, 200))
+    console.warn(`[aiAnalysis:openrouter] failed for ${stock.symbol}:`, msg.slice(0, 200))
     return null
   }
 }
@@ -204,18 +214,18 @@ function fallbackFAQ(stock: StockAnalysisInput, news: NewsItem[]): { question: s
 }
 
 // ──────────────────────────────────────────
-// MAIN ENTRY: Gemini → Groq → static fallback
+// MAIN ENTRY: Gemini → OpenRouter → static fallback
 // ──────────────────────────────────────────
 export async function generateStockAnalysis(stock: StockAnalysisInput, news: NewsItem[]): Promise<AnalysisResult> {
   // Try Gemini first
   const gemini = await generateWithGemini(stock, news)
   if (gemini) return gemini
 
-  // Fall back to Groq
-  const groq = await generateWithGroq(stock, news)
-  if (groq) {
-    console.log(`[aiAnalysis] Used Groq fallback for ${stock.symbol}`)
-    return groq
+  // Fall back to OpenRouter
+  const openrouter = await generateWithOpenRouter(stock, news)
+  if (openrouter) {
+    console.log(`[aiAnalysis] Used OpenRouter fallback for ${stock.symbol}`)
+    return openrouter
   }
 
   // Last resort: static template
