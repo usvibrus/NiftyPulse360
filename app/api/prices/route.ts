@@ -8,6 +8,9 @@ import { fetchRapidApiMetals } from '@/lib/services/rapidApiMetalsService'
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 let cache: { data: unknown; ts: number } | null = null
 
+// 8-hour cache => roughly 3 refreshes per day
+const CACHE_TTL_MS = 8 * 60 * 60 * 1000
+
 function safePct(pct: number | null | undefined): number {
   if (typeof pct !== 'number' || !isFinite(pct)) return 0
   if (Math.abs(pct) > 50) return 0
@@ -79,8 +82,8 @@ async function fetchMetals(): Promise<{ gold: number; silver: number } | null> {
 
 export async function GET() {
   const now = Date.now()
-  if (cache && now - cache.ts < 30000) {
-    return NextResponse.json(cache.data, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } })
+  if (cache && now - cache.ts < CACHE_TTL_MS) {
+    return NextResponse.json(cache.data, { headers: { 'Cache-Control': 'public, s-maxage=28800, stale-while-revalidate=3600' } })
   }
 
   try {
@@ -137,7 +140,7 @@ export async function GET() {
 
     const data = [...indices, ...metalItems]
     if (data.length > 0) cache = { data, ts: now }
-    return NextResponse.json(data, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } })
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'public, s-maxage=28800, stale-while-revalidate=3600' } })
   } catch (e) {
     console.error('[prices] fatal error:', e instanceof Error ? e.message : e)
     return NextResponse.json(cache?.data || [], { status: cache ? 200 : 500 })

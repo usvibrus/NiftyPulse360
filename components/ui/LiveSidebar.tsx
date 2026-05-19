@@ -23,8 +23,6 @@ export default function LiveSidebar() {
       } catch {}
     }
     load()
-    const interval = setInterval(load, 30000)
-    return () => clearInterval(interval)
   }, [])
 
   const indices = data.filter(d => d.symbol in INDEX_LABELS)
