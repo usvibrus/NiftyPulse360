@@ -130,7 +130,7 @@ async function generateWithOpenRouter(stock: StockAnalysisInput, news: NewsItem[
   const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
 
-  const model = process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b:free'
+  const model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 
   try {
@@ -152,7 +152,7 @@ async function generateWithOpenRouter(stock: StockAnalysisInput, news: NewsItem[
         max_tokens: 1200,
         response_format: { type: 'json_object' },
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(60000),
     })
 
     if (!res.ok) {

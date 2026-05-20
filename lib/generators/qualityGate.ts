@@ -15,7 +15,7 @@ export interface QualityGateResult {
 
 // Thresholds calibrated to actual content generator output (avg ~443 words per stock page).
 // Set conservatively below the floor so we only reject pages that look truly broken.
-const MIN_WORDS = 300
+const MIN_WORDS = 250
 const MIN_DATA_POINTS = 5
 // Only block "no news + small move" when the move is genuinely tiny.
 // Real stocks frequently move 1-5% with no fresh news; that's still publishable
