@@ -36,7 +36,7 @@ export async function postToTelegraph() {
       { tag: 'p', children: [s.aiAnalysis ? s.aiAnalysis.slice(0, 800) : `${s.companyName} saw significant movement of ${Math.abs(s.changePercent).toFixed(1)}% on the NSE today.`] },
       { tag: 'hr' },
       { tag: 'p', children: [{ tag: 'strong', children: [{ tag: 'a', attrs: { href: `${siteUrl}/stocks/${s.slug}` }, children: ['📖 Read Full Analysis on NiftyPulse360 →'] }] }] },
-      { tag: 'p', children: [{ tag: 'em', children: ['Disclaimer: Auto-generated content for educational purposes. Not financial advice.'] }] },
+      { tag: 'p', children: [{ tag: 'em', children: ['Disclaimer: For educational purposes only. Not financial advice.'] }] },
     ])
 
     try {

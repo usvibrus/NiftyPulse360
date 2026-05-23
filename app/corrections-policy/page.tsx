@@ -65,7 +65,7 @@ export default function CorrectionsPolicyPage() {
       <h2>Limitations</h2>
       <ul>
         <li>We cannot correct opinions of cited analysts. If a source is misquoted, we will correct that.</li>
-        <li>We cannot retroactively change auto-generated copy on archived pages older than 90 days unless the correction is materially significant.</li>
+        <li>We cannot retroactively change archived pages older than 90 days unless the correction is materially significant.</li>
       </ul>
 
       <h2>Contact</h2>

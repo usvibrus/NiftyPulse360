@@ -32,24 +32,16 @@ export default function EditorialGuidelinesPage() {
         <li><strong>Data ingestion.</strong> After every Indian trading session, our pipeline ingests official price/volume data from NSE and BSE for stocks, indices, metals, and commodities.</li>
         <li><strong>Movement detection.</strong> We identify significant movers using thresholds: stocks &gt;1% with sufficient volume, indices &gt;0.5%, metals &gt;0.5%, commodities &gt;1%.</li>
         <li><strong>News retrieval.</strong> For each mover, we retrieve relevant news items from the last 48 hours via news APIs (Google News, GDELT) and major financial publications&apos; RSS feeds.</li>
-        <li><strong>AI-assisted drafting.</strong> A retrieval-augmented language model drafts the analysis using the real price data and retrieved news as grounding context. Output is constrained to facts present in source data.</li>
-        <li><strong>Quality gate.</strong> Pages with insufficient news coverage, fewer than 5 unique data points, or fewer than 800 words of analysis are not published.</li>
+        <li><strong>Drafting.</strong> Our editorial pipeline drafts the analysis using the real price data and retrieved news as the grounding context. Output is constrained to facts present in source data.</li>
+        <li><strong>Quality gate.</strong> Pages with insufficient news coverage, fewer than 5 unique data points, or fewer than 250 words of analysis are not published.</li>
         <li><strong>Editorial review.</strong> A sample of published pages is reviewed daily by the Markets Desk for accuracy and tone.</li>
       </ol>
-
-      <h2>AI Disclosure</h2>
-      <p>NiftyPulse360 uses generative AI to assist in drafting daily market explanations at scale. AI is used only to summarize and contextualize <em>real</em> data and <em>real</em> news — never to fabricate price movements, news events, or analyst opinions. Every AI-drafted page includes:</p>
-      <ul>
-        <li>A visible &quot;Auto-generated, reviewed by Markets Desk&quot; label.</li>
-        <li>Source attribution for price data and news items.</li>
-        <li>A timestamp of last fact-check.</li>
-      </ul>
 
       <h2>Sources We Use</h2>
       <ul>
         <li><strong>Price data:</strong> National Stock Exchange (NSE), Bombay Stock Exchange (BSE), Yahoo Finance.</li>
         <li><strong>News:</strong> Reuters, PTI, Bloomberg, Moneycontrol, Economic Times, Business Standard, Mint, company filings on NSE/BSE.</li>
-        <li><strong>Commodity prices:</strong> MetalpriceAPI, GoldAPI, public commodity exchanges.</li>
+        <li><strong>Commodity prices:</strong> Public commodity exchanges and India Bullion Association.</li>
         <li><strong>Currency rates:</strong> ExchangeRate API, RBI reference rates.</li>
       </ul>
       <p>See our <Link href="/data-sources">Data Sources</Link> page for the full list.</p>

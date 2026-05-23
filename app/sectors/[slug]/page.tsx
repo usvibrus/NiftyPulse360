@@ -78,7 +78,7 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
 
       <h1 className="text-2xl md:text-3xl font-bold mb-2">{sectorName} Sector — Today&apos;s Movers</h1>
       <p className="text-sm text-[#666] mb-6">
-        Daily auto-generated explanations of significant stock movements in the {sectorName} sector. Drawn from official NSE/BSE data and verified news sources. Reviewed by the <Link href="/authors/market-desk" className="text-[#1565C0] hover:underline">Markets Desk</Link>.
+        Daily explanations of significant stock movements in the {sectorName} sector. Drawn from official NSE/BSE data and verified news sources, published by the <Link href="/authors/market-desk" className="text-[#1565C0] hover:underline">Markets Desk</Link>.
       </p>
 
       {gainers.length > 0 && (

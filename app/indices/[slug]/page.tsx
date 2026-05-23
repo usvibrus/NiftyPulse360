@@ -94,12 +94,11 @@ export default async function IndexEventPage({ params }: { params: Promise<{ slu
       </div>
 
       <div className="bg-[#F5F7FA] border border-[#E0E0E0] rounded-md px-3 py-2 mb-4 text-xs text-[#444] flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="inline-flex items-center gap-1 font-semibold text-[#1565C0]">🤖 Auto-generated, reviewed by Markets Desk</span>
+        <span className="font-semibold text-[#1565C0]">📊 Sources:</span>
+        <span>NSE Indices Limited</span>
         <span aria-hidden>•</span>
-        <span>Price data: NSE Indices Limited</span>
-        <span aria-hidden>•</span>
-        <span>News: Reuters, PTI, ET, Moneycontrol</span>
-        <Link href="/methodology" className="text-[#1565C0] hover:underline ml-auto">How we make these →</Link>
+        <span>Reuters, PTI, ET, Moneycontrol</span>
+        <Link href="/methodology" className="text-[#1565C0] hover:underline ml-auto">Our methodology →</Link>
       </div>
 
       <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER || ''} />

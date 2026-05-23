@@ -7,12 +7,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
           <div className="col-span-2">
             <h3 className="text-white font-bold text-lg mb-3">NiftyPulse<span className="text-[#4FC3F7]">360</span></h3>
-            <p className="text-xs text-gray-400 leading-relaxed mb-3">India&apos;s real-time market intelligence platform. Auto-generated stock market analysis after every trading session, reviewed by the Markets Desk.</p>
-            <p className="text-xs text-gray-400 leading-relaxed mb-3">
-              <strong className="text-gray-300">🤖 AI disclosure:</strong> Pages on this site are automatically drafted using AI grounded in real exchange data and verified news, then reviewed by our editorial team. See <Link href="/editorial-guidelines" className="text-[#4FC3F7] hover:text-white">Editorial Guidelines</Link> and <Link href="/methodology" className="text-[#4FC3F7] hover:text-white">Methodology</Link>.
-            </p>
+            <p className="text-xs text-gray-400 leading-relaxed mb-3">India&apos;s real-time market intelligence platform. Daily Indian stock market analysis, news and explanations published by the Markets Desk after every trading session.</p>
             <p className="text-xs text-gray-400 leading-relaxed">
-              <strong className="text-gray-300">Data sources:</strong> NSE, BSE, RBI, Yahoo Finance, MetalpriceAPI, Reuters, PTI, Moneycontrol, Economic Times. Full list at <Link href="/data-sources" className="text-[#4FC3F7] hover:text-white">Data Sources</Link>.
+              <strong className="text-gray-300">Data sources:</strong> NSE, BSE, RBI, Reuters, PTI, Moneycontrol, Economic Times. Full list at <Link href="/data-sources" className="text-[#4FC3F7] hover:text-white">Data Sources</Link>.
             </p>
             <div className="mt-4 flex gap-3">
               <a href="https://x.com/bhamre61968" rel="noopener noreferrer" target="_blank" aria-label="NiftyPulse360 on X" className="text-gray-400 hover:text-white text-xs">X.com</a>

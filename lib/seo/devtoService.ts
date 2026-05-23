@@ -55,7 +55,7 @@ ${s.niftyChange ? `- **Nifty Change:** ${s.niftyChange > 0 ? '+' : ''}${s.niftyC
 
 ---
 
-> 💡 *This analysis is auto-generated for educational purposes. Not financial advice.*
+> 💡 *For educational purposes only. Not financial advice.*
 
 📖 **[Read the full detailed analysis on NiftyPulse360 →](${siteUrl}/stocks/${s.slug})**
 `

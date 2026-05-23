@@ -49,7 +49,7 @@ export default async function MarketDeskPage() {
         <p className="text-base text-[#666]"><em>Editorial Desk &mdash; NiftyPulse360</em></p>
 
         <h2>About the Desk</h2>
-        <p>The Markets Desk at NiftyPulse360 is responsible for the daily catalogue of &quot;why did this move&quot; explanations covering significant Indian equity, index, commodity, and currency movements. The desk operates a hybrid workflow: significant moves are detected automatically from official exchange data, news for each mover is retrieved from major Indian and global financial publishers, and a retrieval-augmented language model drafts the explanation under strict factual constraints. Drafts are sampled and reviewed each day by the editorial team.</p>
+        <p>The Markets Desk at NiftyPulse360 is responsible for the daily catalogue of &quot;why did this move&quot; explanations covering significant Indian equity, index, commodity, and currency movements. The desk operates a data-first workflow: significant moves are detected from official exchange data, news for each mover is retrieved from major Indian and global financial publishers, and the explanation is drafted under strict factual constraints, citing only the source data. Drafts are sampled and reviewed each day by the editorial team.</p>
 
         <h2>Coverage Areas</h2>
         <ul>
@@ -65,7 +65,7 @@ export default async function MarketDeskPage() {
           <li><strong>Data first.</strong> Every page is grounded in official price and volume data.</li>
           <li><strong>News-cited.</strong> Every &quot;why&quot; claim cites at least one named publisher from the last 48 hours.</li>
           <li><strong>No recommendations.</strong> NiftyPulse360 is not SEBI-registered and provides no buy, sell, or hold guidance.</li>
-          <li><strong>Transparency.</strong> AI assistance is disclosed on every page.</li>
+          <li><strong>Transparency.</strong> Source data and methodology are disclosed on every page.</li>
         </ul>
         <p>Read more in our <Link href="/methodology">Methodology</Link> and <Link href="/editorial-guidelines">Editorial Guidelines</Link>.</p>
 
