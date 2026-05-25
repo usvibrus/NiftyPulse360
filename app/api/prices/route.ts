@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
-import YahooFinance from 'yahoo-finance2'
 import { prisma } from '@/lib/db/prisma'
-import { fetchStooqIndex } from '@/lib/services/stooqService'
+import { fetchGoogleFinanceQuote } from '@/lib/services/googleFinanceService'
+import { fetchGoodReturnsMetals } from '@/lib/services/goodReturnsService'
 import { fetchTwelveDataQuote } from '@/lib/services/twelveDataService'
 import { fetchRapidApiMetals } from '@/lib/services/rapidApiMetalsService'
+import { fetchStooqIndex } from '@/lib/services/stooqService'
 
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 let cache: { data: unknown; ts: number } | null = null
-
-// 8-hour cache => roughly 3 refreshes per day
 const CACHE_TTL_MS = 8 * 60 * 60 * 1000
 
 function safePct(pct: number | null | undefined): number {
@@ -17,47 +15,35 @@ function safePct(pct: number | null | undefined): number {
   return pct
 }
 
-// PRIMARY: Twelve Data (free 800/day, reliable for Indian indices)
-// FALLBACK 1: Yahoo Finance (often blocked on cloud IPs)
-// FALLBACK 2: Stooq (only works for some symbols, not Indian indices)
+// PRIMARY: Google Finance (free, no key, reliable for Indian indices)
+// FALLBACK 1: Twelve Data (needs TWELVEDATA_API_KEY)
+// FALLBACK 2: Stooq (unreliable for Indian indices)
 // FALLBACK 3: DB latest IndexEvent
 async function fetchIndices(): Promise<{ symbol: string; price: number; change: number; changePercent: number }[]> {
   const out: { symbol: string; price: number; change: number; changePercent: number }[] = []
 
-  // 1. Try Twelve Data first
-  const [niftyTd, sensexTd] = await Promise.all([
-    fetchTwelveDataQuote('^NSEI'),
-    fetchTwelveDataQuote('^BSESN'),
+  // 1. Try Google Finance first (free, no API key)
+  const [niftyGf, sensexGf] = await Promise.all([
+    fetchGoogleFinanceQuote('^NSEI'),
+    fetchGoogleFinanceQuote('^BSESN'),
   ])
-  if (niftyTd) out.push({ ...niftyTd, changePercent: safePct(niftyTd.changePercent) })
-  if (sensexTd) out.push({ ...sensexTd, changePercent: safePct(sensexTd.changePercent) })
+  if (niftyGf) out.push({ ...niftyGf, changePercent: safePct(niftyGf.changePercent) })
+  if (sensexGf) out.push({ ...sensexGf, changePercent: safePct(sensexGf.changePercent) })
 
-  // 2. Fill gaps with Yahoo
+  // 2. Fill gaps with Twelve Data (if API key is set)
   const haveNifty = out.some(i => i.symbol === '^NSEI')
   const haveSensex = out.some(i => i.symbol === '^BSESN')
 
   if (!haveNifty || !haveSensex) {
-    const yahooResults = await Promise.allSettled([
-      !haveNifty ? yahooFinance.quote('^NSEI') : Promise.resolve(null),
-      !haveSensex ? yahooFinance.quote('^BSESN') : Promise.resolve(null),
+    const [niftyTd, sensexTd] = await Promise.all([
+      !haveNifty ? fetchTwelveDataQuote('^NSEI') : Promise.resolve(null),
+      !haveSensex ? fetchTwelveDataQuote('^BSESN') : Promise.resolve(null),
     ])
-    yahooResults.forEach((r, i) => {
-      const sym = i === 0 ? '^NSEI' : '^BSESN'
-      if (r.status === 'fulfilled' && r.value) {
-        const q = r.value as any
-        if (q.regularMarketPrice) {
-          out.push({
-            symbol: sym,
-            price: q.regularMarketPrice,
-            change: q.regularMarketChange ?? 0,
-            changePercent: safePct(q.regularMarketChangePercent),
-          })
-        }
-      }
-    })
+    if (niftyTd) out.push({ ...niftyTd, changePercent: safePct(niftyTd.changePercent) })
+    if (sensexTd) out.push({ ...sensexTd, changePercent: safePct(sensexTd.changePercent) })
   }
 
-  // 3. Try Stooq as last network fallback (rarely works for Indian indices but free to try)
+  // 3. Try Stooq as last network fallback
   const stillMissingNifty = !out.some(i => i.symbol === '^NSEI')
   const stillMissingSensex = !out.some(i => i.symbol === '^BSESN')
   if (stillMissingNifty || stillMissingSensex) {
@@ -72,12 +58,23 @@ async function fetchIndices(): Promise<{ symbol: string; price: number; change: 
   return out
 }
 
-// PRIMARY: RapidAPI gold-silver-rates-india (returns INR per gram directly)
-// FALLBACK: DB latest MetalEvent
-async function fetchMetals(): Promise<{ gold: number; silver: number } | null> {
-  const result = await fetchRapidApiMetals()
-  if (!result) return null
-  return { gold: result.gold24k, silver: result.silver }
+// PRIMARY: GoodReturns.in (free, no key, INR per gram)
+// FALLBACK 1: RapidAPI (needs RAPIDAPI_KEY)
+// FALLBACK 2: DB latest MetalEvent
+async function fetchMetals(): Promise<{ gold: number; silver: number; goldChange: number; silverChange: number } | null> {
+  // Try GoodReturns first
+  const gr = await fetchGoodReturnsMetals()
+  if (gr && gr.gold24k > 0) {
+    return { gold: gr.gold24k, silver: gr.silver, goldChange: gr.goldChange, silverChange: gr.silverChange }
+  }
+
+  // Fallback to RapidAPI
+  const rapid = await fetchRapidApiMetals()
+  if (rapid) {
+    return { gold: rapid.gold24k, silver: rapid.silver, goldChange: 0, silverChange: 0 }
+  }
+
+  return null
 }
 
 export async function GET() {
@@ -128,14 +125,23 @@ export async function GET() {
     const silverPrice = metalPrices?.silver || (silverDb?.pricePerGram && silverDb.pricePerGram > 0 && silverDb.pricePerGram < 10000 ? silverDb.pricePerGram : 0)
 
     if (goldPrice > 0) {
-      const rawPct = goldDb ? (goldDb.eventType === 'FALL' ? -goldDb.changePercent : goldDb.changePercent) : 0
-      const pct = safePct(rawPct)
-      metalItems.push({ symbol: 'GC=F', price: goldPrice, change: goldPrice * pct / 100, changePercent: pct })
+      // Use change from GoodReturns if available, else from DB
+      let pct = 0
+      if (metalPrices?.goldChange && goldPrice > 0) {
+        pct = safePct((metalPrices.goldChange / (goldPrice - metalPrices.goldChange)) * 100)
+      } else if (goldDb) {
+        pct = safePct(goldDb.eventType === 'FALL' ? -goldDb.changePercent : goldDb.changePercent)
+      }
+      metalItems.push({ symbol: 'GC=F', price: goldPrice, change: metalPrices?.goldChange || goldPrice * pct / 100, changePercent: pct })
     }
     if (silverPrice > 0) {
-      const rawPct = silverDb ? (silverDb.eventType === 'FALL' ? -silverDb.changePercent : silverDb.changePercent) : 0
-      const pct = safePct(rawPct)
-      metalItems.push({ symbol: 'SI=F', price: silverPrice, change: silverPrice * pct / 100, changePercent: pct })
+      let pct = 0
+      if (metalPrices?.silverChange && silverPrice > 0) {
+        pct = safePct((metalPrices.silverChange / (silverPrice - metalPrices.silverChange)) * 100)
+      } else if (silverDb) {
+        pct = safePct(silverDb.eventType === 'FALL' ? -silverDb.changePercent : silverDb.changePercent)
+      }
+      metalItems.push({ symbol: 'SI=F', price: silverPrice, change: metalPrices?.silverChange || silverPrice * pct / 100, changePercent: pct })
     }
 
     const data = [...indices, ...metalItems]
