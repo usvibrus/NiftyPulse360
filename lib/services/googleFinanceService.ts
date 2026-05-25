@@ -36,7 +36,7 @@ export async function fetchGoogleFinanceQuote(symbol: string): Promise<GoogleFin
     const html = await res.text()
 
     // Price is in: <div class="N6SYTe"><span ...><span>24,031.70</span></span></div>
-    const priceMatch = html.match(/class="N6SYTe"[^>]*>.*?<span>([\d,]+\.?\d*)<\/span>/s)
+    const priceMatch = html.match(/class="N6SYTe"[^>]*>[\s\S]*?<span>([\d,]+\.?\d*)<\/span>/)
     if (!priceMatch) {
       console.warn(`[google-finance] Could not parse price for ${symbol}`)
       return null
@@ -46,15 +46,14 @@ export async function fetchGoogleFinanceQuote(symbol: string): Promise<GoogleFin
     if (!Number.isFinite(price) || price <= 0) return null
 
     // Change percent is in text like "+1.32%" or "-0.45%"
-    // Look for the change section after the price
-    const changeSection = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,.]+%)/s)
+    const changeSection = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,.]+%)/)
     let changePercent = 0
     if (changeSection) {
       changePercent = parseFloat(changeSection[1].replace(/[,%]/g, ''))
     }
 
     // Change points - look for pattern like "+312.40" near the percent
-    const changePointsMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)/s)
+    const changePointsMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)/)
     let change = 0
     if (changePointsMatch) {
       change = parseFloat(changePointsMatch[1].replace(/,/g, ''))
