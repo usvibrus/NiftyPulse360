@@ -26,7 +26,8 @@ const BLOCKED_USER_AGENTS = [
   'youbot',
   // Apple / Amazon / Huawei assistant bots
   'amazonbot',
-  'applebot-extended', // block AI training variant; Applebot is allowed for Siri/Spotlight if you want
+  'applebot',          // Apple's general crawler (Siri, Spotlight) - low traffic value for finance site
+  'applebot-extended', // Apple AI training
   // SEO crawlers (heavy hits, no traffic)
   'ahrefsbot',
   'semrushbot',
