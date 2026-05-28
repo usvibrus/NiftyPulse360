@@ -69,6 +69,72 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {/* Daily Trader Tools - Internal links to high-intent SEO pages */}
+          <div className="mb-4">
+            <div className="section-header">
+              <span>🧰 Daily Trader Tools</span>
+            </div>
+            <div className="bg-white border border-t-0 border-[#E0E0E0] p-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                <Link href="/stocks/upper-circuit-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">🔥 Upper Circuit</div>
+                  <div className="text-xs text-[#666]">Stocks at upper limit</div>
+                </Link>
+                <Link href="/stocks/lower-circuit-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">🧊 Lower Circuit</div>
+                  <div className="text-xs text-[#666]">Stocks at lower limit</div>
+                </Link>
+                <Link href="/stocks/52-week-high-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">🎯 52-Week High</div>
+                  <div className="text-xs text-[#666]">Fresh yearly highs</div>
+                </Link>
+                <Link href="/stocks/52-week-low-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">📉 52-Week Low</div>
+                  <div className="text-xs text-[#666]">Fresh yearly lows</div>
+                </Link>
+                <Link href="/stocks/top-gainers-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">📈 Top Gainers</div>
+                  <div className="text-xs text-[#666]">Biggest winners</div>
+                </Link>
+                <Link href="/stocks/top-losers-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA]">
+                  <div className="font-semibold text-[#1A1A1A]">📊 Top Losers</div>
+                  <div className="text-xs text-[#666]">Biggest decliners</div>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Sectoral Quick Links */}
+          <div className="mb-4">
+            <div className="section-header">
+              <span>🏭 Sectors Today</span>
+            </div>
+            <div className="bg-white border border-t-0 border-[#E0E0E0] p-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                <Link href="/stocks/nifty-it-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA] text-center">
+                  <div className="font-semibold text-[#1A1A1A]">🖥️ IT</div>
+                  <div className="text-xs text-[#666]">Nifty IT</div>
+                </Link>
+                <Link href="/stocks/nifty-pharma-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA] text-center">
+                  <div className="font-semibold text-[#1A1A1A]">💊 Pharma</div>
+                  <div className="text-xs text-[#666]">Nifty Pharma</div>
+                </Link>
+                <Link href="/stocks/nifty-auto-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA] text-center">
+                  <div className="font-semibold text-[#1A1A1A]">🚗 Auto</div>
+                  <div className="text-xs text-[#666]">Nifty Auto</div>
+                </Link>
+                <Link href="/stocks/nifty-realty-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA] text-center">
+                  <div className="font-semibold text-[#1A1A1A]">🏠 Realty</div>
+                  <div className="text-xs text-[#666]">Nifty Realty</div>
+                </Link>
+                <Link href="/stocks/nifty-ev-stocks-today" className="border border-[#E0E0E0] rounded p-2 hover:border-[#1565C0] hover:bg-[#F5F7FA] text-center">
+                  <div className="font-semibold text-[#1A1A1A]">⚡ EV</div>
+                  <div className="text-xs text-[#666]">Nifty EV</div>
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Latest Market Updates */}
           <div className="mb-4">
             <div className="section-header">
