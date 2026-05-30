@@ -9,7 +9,8 @@
 import { fetchGoogleFinanceStock, GoogleFinanceStock } from '@/lib/services/googleFinanceService'
 import { SECTOR_UNIVERSES, getSectorBySlug } from '@/lib/sectors/sectorUniverse'
 
-const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
+const CACHE_TTL_MS = 30 * 60 * 1000 // 30 min — fresher data, less memory pressure
+const MAX_CACHE_KEYS = 10           // hard cap. Currently we use 6 keys, so this is headroom
 const cache = new Map<string, { data: GoogleFinanceStock[]; ts: number }>()
 
 // Curated NSE universe used for non-sector filters (circuit, 52-week).
@@ -48,6 +49,14 @@ async function fetchUniverse(symbols: string[], cacheKey: string): Promise<Googl
       // skip failed symbol
     }
   }
+
+  // Evict oldest entries if we exceed the size cap (insertion order = age in JS Maps)
+  while (cache.size >= MAX_CACHE_KEYS) {
+    const oldestKey = cache.keys().next().value
+    if (oldestKey === undefined) break
+    cache.delete(oldestKey)
+  }
+
   cache.set(cacheKey, { data: results, ts: now })
   return results
 }

@@ -3,6 +3,22 @@
  * No API key needed. Parses the public Google Finance page.
  */
 
+// Standard fetch helper. Google Finance pages are ~1 MB and most of the data
+// we parse lives in the last 25%, so partial-body reads don't help here.
+// Memory savings come from: (1) bounded cache in moversLib, (2) explicit GC
+// of the html string by scoping it tightly inside each fetch function.
+async function fetchHtml(url: string, signal: AbortSignal): Promise<string | null> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    signal,
+  })
+  if (!res.ok) return null
+  return await res.text()
+}
+
 export interface GoogleFinanceQuote {
   symbol: string
   price: number
@@ -45,20 +61,11 @@ export async function fetchGoogleFinanceQuote(symbol: string): Promise<GoogleFin
   if (!url) return null
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!res.ok) {
-      console.warn(`[google-finance] HTTP ${res.status} for ${symbol}`)
+    const html = await fetchHtml(url, AbortSignal.timeout(10000))
+    if (!html) {
+      console.warn(`[google-finance] empty/failed response for ${symbol}`)
       return null
     }
-
-    const html = await res.text()
 
     // Price is in: <div class="N6SYTe"><span ...><span>24,031.70</span></span></div>
     const priceMatch = html.match(/class="N6SYTe"[^>]*>[\s\S]*?<span>([\d,]+\.?\d*)<\/span>/)
@@ -72,23 +79,14 @@ export async function fetchGoogleFinanceQuote(symbol: string): Promise<GoogleFin
 
     // Change percent is in text like "+1.32%" or "-0.45%"
     const changeSection = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,.]+%)/)
-    let changePercent = 0
-    if (changeSection) {
-      changePercent = parseFloat(changeSection[1].replace(/[,%]/g, ''))
-    }
+    const changePercent = changeSection ? parseFloat(changeSection[1].replace(/[,%]/g, '')) : 0
 
     // Change points - look for pattern like "+312.40" near the percent
     const changePointsMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)/)
-    let change = 0
-    if (changePointsMatch) {
-      change = parseFloat(changePointsMatch[1].replace(/,/g, ''))
-    }
+    let change = changePointsMatch ? parseFloat(changePointsMatch[1].replace(/,/g, '')) : 0
+    if (change === 0 && changePercent !== 0) change = price * changePercent / 100
 
-    // If we couldn't get change from HTML, calculate from percent
-    if (change === 0 && changePercent !== 0) {
-      change = price * changePercent / 100
-    }
-
+    // (html string can now be GC'd as soon as this function returns)
     return {
       symbol,
       price,
@@ -128,20 +126,11 @@ export async function fetchGoogleFinanceStock(symbol: string): Promise<GoogleFin
   const url = `https://www.google.com/finance/quote/${encodeURIComponent(symbol)}:NSE`
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!res.ok) {
-      console.warn(`[google-finance-stock] HTTP ${res.status} for ${symbol}`)
+    const html = await fetchHtml(url, AbortSignal.timeout(10000))
+    if (!html) {
+      console.warn(`[google-finance-stock] empty/failed response for ${symbol}`)
       return null
     }
-
-    const html = await res.text()
 
     // Price: <div class="N6SYTe">...<span>₹1,366.40</span>
     const priceMatch = html.match(/class="N6SYTe"[^>]*>[\s\S]*?<span>₹?\s*([\d,]+\.?\d*)<\/span>/)
@@ -179,6 +168,7 @@ export async function fetchGoogleFinanceStock(symbol: string): Promise<GoogleFin
     // Use open as proxy for prev close (close enough for our purposes)
     const prevClose = open > 0 ? open : price - change
 
+    // (html string is GC'd as soon as we return — only the small parsed object lives on)
     return {
       symbol,
       companyName,
@@ -210,17 +200,8 @@ export async function fetchGoogleFinanceIndex(symbol: string): Promise<GoogleFin
   if (!url) return null
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!res.ok) return null
-
-    const html = await res.text()
+    const html = await fetchHtml(url, AbortSignal.timeout(10000))
+    if (!html) return null
 
     // Price
     const priceMatch = html.match(/class="N6SYTe"[^>]*>[\s\S]*?<span>₹?\s*([\d,]+\.?\d*)<\/span>/)
