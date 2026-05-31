@@ -1,6 +1,5 @@
-import YahooFinance from 'yahoo-finance2'
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 import axios from 'axios'
+import { getYahooFinance } from './yahooLazy'
 
 export interface CommodityData {
   commodity: string
@@ -24,6 +23,9 @@ const COMMODITIES = [
 
 export async function getCommodityMovers(): Promise<CommodityData[]> {
   const movers: CommodityData[] = []
+
+  // Lazy-load Yahoo Finance to avoid leaking the cookie jar at module scope
+  const yahooFinance = await getYahooFinance()
 
   for (const c of COMMODITIES) {
     try {
@@ -50,6 +52,9 @@ export async function getCommodityMovers(): Promise<CommodityData[]> {
 
 export async function getCurrencyMovers(): Promise<CurrencyData[]> {
   const movers: CurrencyData[] = []
+
+  // Lazy-load Yahoo Finance for the % change lookups inside the loop
+  const yahooFinance = await getYahooFinance()
 
   try {
     const res = await axios.get(`https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/latest/USD`)

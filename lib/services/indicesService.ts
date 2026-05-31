@@ -1,7 +1,5 @@
-import YahooFinance from 'yahoo-finance2'
 import { fetchGoogleFinanceIndex } from './googleFinanceService'
-
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
+import { getYahooFinance } from './yahooLazy'
 
 export interface IndexMoverData {
   indexName: string
@@ -30,6 +28,10 @@ function delay(ms: number) {
 export async function getIndexMovers(): Promise<IndexMoverData[]> {
   const movers: IndexMoverData[] = []
 
+  // Lazy-load Yahoo Finance — only the rare fallback path actually uses it,
+  // and we want its cookie jar to be GC'd after this function returns.
+  let yahooFinance: Awaited<ReturnType<typeof getYahooFinance>> | null = null
+
   for (const idx of INDICES) {
     let added = false
 
@@ -57,6 +59,7 @@ export async function getIndexMovers(): Promise<IndexMoverData[]> {
     // 2. Fallback to Yahoo Finance (rarely works on cloud, but try)
     if (!added) {
       try {
+        if (!yahooFinance) yahooFinance = await getYahooFinance()
         const quote = await yahooFinance.quote(idx.symbol) as Record<string, unknown>
         if (quote) {
           const pChange = (quote.regularMarketChangePercent as number) ?? 0

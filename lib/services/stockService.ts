@@ -1,7 +1,5 @@
-import YahooFinance from 'yahoo-finance2'
 import { fetchGoogleFinanceStock } from './googleFinanceService'
-
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
+import { getYahooFinance } from './yahooLazy'
 
 export interface StockMoverData {
   symbol: string
@@ -100,6 +98,10 @@ async function fetchGoogleMovers(): Promise<StockMoverData[]> {
 async function fetchYahooFallback(): Promise<StockMoverData[]> {
   const movers: StockMoverData[] = []
 
+  // Lazy-load Yahoo Finance to prevent its cookie jar from leaking across requests.
+  // The instance lives only for this function call, then gets garbage-collected.
+  const yahooFinance = await getYahooFinance()
+
   for (const sym of STOCK_UNIVERSE.slice(0, 25)) {
     try {
       const yahooSym = `${sym}.NS`
@@ -150,6 +152,7 @@ export async function getNiftyChangePercent(): Promise<number | null> {
 
   // Fallback to Yahoo
   try {
+    const yahooFinance = await getYahooFinance()
     const quote = await yahooFinance.quote('^NSEI') as Record<string, unknown>
     return (quote?.regularMarketChangePercent as number) ?? null
   } catch {
