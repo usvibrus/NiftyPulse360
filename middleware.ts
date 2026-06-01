@@ -13,6 +13,8 @@ const BLOCKED_USER_AGENTS = [
   'anthropic-ai',
   'claude-web',
   'claudebot',
+  // 'claude-searchbot',  // Allowed: this is Anthropic's grounding/search bot for Claude citations.
+  //                         Can drive small referral traffic. Block if it gets aggressive.
   'cohere-ai',
   'perplexitybot',
   'google-extended',

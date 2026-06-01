@@ -6,10 +6,11 @@ const nextConfig: NextConfig = {
   // and behind Cloudflare CDN, so user-facing speed is unchanged.
   cacheMaxMemorySize: 0,
 
-  // Generate a minimal standalone server bundle.
-  // Only files actually needed at runtime are included, reducing
-  // cold-start memory and deploy size from ~500 MB to ~100-150 MB.
-  output: "standalone",
+  // NOTE: We DON'T use `output: "standalone"` here.
+  // standalone strips the public/ folder from the deployment, which broke
+  // /icon.svg, /logo.svg, and other static assets. Memory savings now come
+  // from cacheMaxMemorySize:0 + Railway replica limits (1 GB), so we don't
+  // need standalone's bundle reduction.
 
   async headers() {
     return [

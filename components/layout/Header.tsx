@@ -27,21 +27,25 @@ async function getTickerData() {
 export default async function Header() {
   const { indices, metals, commodities, currencies, stocks } = await getTickerData()
 
+  // Defensive filter: reject any row with insane changePercent (corrupt DB values)
+  // No real Indian market instrument moves more than ~25% in a day; >50% is corruption.
+  const sanePct = (n: number) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 50
+
   const tickerItems: { label: string; value: string; change: string; isRise: boolean }[] = []
 
-  indices.forEach(i => {
+  indices.filter(i => sanePct(i.changePercent)).forEach(i => {
     tickerItems.push({ label: i.indexName, value: i.closeValue.toLocaleString('en-IN'), change: `${i.eventType === 'RISE' ? '▲' : '▼'}${i.changePercent.toFixed(2)}%`, isRise: i.eventType === 'RISE' })
   })
-  metals.forEach(m => {
+  metals.filter(m => sanePct(m.changePercent) && m.pricePerGram > 0 && m.pricePerGram < 100000).forEach(m => {
     tickerItems.push({ label: `${m.metal} ${m.carat || ''}`, value: `₹${m.pricePerGram.toFixed(0)}/g`, change: `${m.eventType === 'RISE' ? '▲' : '▼'}${m.changePercent.toFixed(2)}%`, isRise: m.eventType === 'RISE' })
   })
-  commodities.forEach(c => {
+  commodities.filter(c => sanePct(c.changePercent)).forEach(c => {
     tickerItems.push({ label: c.commodity.replace('_', ' '), value: `$${c.priceUSD.toFixed(2)}`, change: `${c.eventType === 'RISE' ? '▲' : '▼'}${c.changePercent.toFixed(2)}%`, isRise: c.eventType === 'RISE' })
   })
-  currencies.forEach(c => {
+  currencies.filter(c => sanePct(c.changePercent)).forEach(c => {
     tickerItems.push({ label: c.pair.replace('_', '/'), value: `₹${c.rateValue.toFixed(2)}`, change: `${c.eventType === 'RISE' ? '▲' : '▼'}${c.changePercent.toFixed(2)}%`, isRise: c.eventType === 'RISE' })
   })
-  stocks.forEach(s => {
+  stocks.filter(s => sanePct(s.changePercent)).forEach(s => {
     tickerItems.push({ label: s.symbol, value: `₹${s.closePrice.toFixed(0)}`, change: `${s.eventType === 'RISE' ? '▲' : '▼'}${s.changePercent.toFixed(2)}%`, isRise: s.eventType === 'RISE' })
   })
 
