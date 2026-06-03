@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: '/indices', label: 'Indices' },
   { href: '/gold', label: 'Gold & Silver' },
   { href: '/commodities', label: 'Commodities' },
+  { href: '/blog', label: 'Blog' },
 ]
 
 async function getTickerData() {

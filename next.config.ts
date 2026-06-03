@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
   // from cacheMaxMemorySize:0 + Railway replica limits (1 GB), so we don't
   // need standalone's bundle reduction.
 
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'rankai.ai',
+      },
+    ],
+  },
+
   async headers() {
     return [
       {
