@@ -1,10 +1,9 @@
-import axios from 'axios'
-import { google } from 'googleapis'
 import { prisma } from '@/lib/db/prisma'
 
 const SITE = () => process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 
 // LAYER 1: Google Indexing API — direct ping to Google
+// googleapis is ~100-150MB in memory, so we dynamic-import it only when needed
 async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETED' = 'URL_UPDATED'): Promise<boolean> {
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
   const privateKey = process.env.GOOGLE_INDEXING_SA_PRIVATE_KEY
@@ -14,6 +13,7 @@ async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETE
   }
 
   try {
+    const { google } = await import('googleapis')
     const auth = new google.auth.JWT({
       email,
       key: privateKey.replace(/\\n/g, '\n'),
@@ -37,12 +37,17 @@ async function pingIndexNow(urls: string[]): Promise<{ success: boolean; count: 
   if (!key || !siteUrl || urls.length === 0) return { success: false, count: 0 }
 
   try {
-    await axios.post('https://api.indexnow.org/indexnow', {
-      host: new URL(siteUrl).hostname,
-      key,
-      keyLocation: `${siteUrl}/${key}.txt`,
-      urlList: urls,
-    }, { timeout: 10000 })
+    await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        host: new URL(siteUrl).hostname,
+        key,
+        keyLocation: `${siteUrl}/${key}.txt`,
+        urlList: urls,
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
     console.log(`[indexing] IndexNow pinged ${urls.length} URLs (Bing + Yandex + others)`)
     return { success: true, count: urls.length }
   } catch (error) {
@@ -61,9 +66,11 @@ async function pingWebSub(): Promise<boolean> {
     const params = new URLSearchParams()
     params.append('hub.mode', 'publish')
     params.append('hub.url', feedUrl)
-    await axios.post(hub, params.toString(), {
+    await fetch(hub, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: 10000,
+      body: params.toString(),
+      signal: AbortSignal.timeout(10000),
     })
     console.log(`[indexing] WebSub hub notified for ${feedUrl}`)
     return true
@@ -78,28 +85,28 @@ async function pingWebSub(): Promise<boolean> {
 async function pingSitemaps(): Promise<{ google: boolean; bing: boolean }> {
   const siteUrl = SITE()
   const sitemaps = [`${siteUrl}/sitemap.xml`, `${siteUrl}/news-sitemap.xml`]
-  let google = false
-  let bing = false
+  let googleOk = false
+  let bingOk = false
 
   // Google
   for (const sm of sitemaps) {
     try {
-      await axios.get(`https://www.google.com/ping?sitemap=${encodeURIComponent(sm)}`, { timeout: 8000 })
-      google = true
-    } catch (e) {
+      await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sm)}`, { signal: AbortSignal.timeout(8000) })
+      googleOk = true
+    } catch {
       // ignore - Google deprecated this endpoint but still returns 200 in many cases
     }
   }
   // Bing
   for (const sm of sitemaps) {
     try {
-      await axios.get(`https://www.bing.com/ping?sitemap=${encodeURIComponent(sm)}`, { timeout: 8000 })
-      bing = true
-    } catch (e) {
+      await fetch(`https://www.bing.com/ping?sitemap=${encodeURIComponent(sm)}`, { signal: AbortSignal.timeout(8000) })
+      bingOk = true
+    } catch {
       // ignore
     }
   }
-  return { google, bing }
+  return { google: googleOk, bing: bingOk }
 }
 
 // PUBLIC: Immediate post-publish pipeline for a single (or batch of) URL.

@@ -3,7 +3,6 @@ import MoversList from '@/components/seo/MoversList'
 import { getLowerCircuitStocks } from '@/lib/sectors/moversLib'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Lower Circuit Stocks Today — NSE Stocks Hitting Lower Limit | NiftyPulse360',

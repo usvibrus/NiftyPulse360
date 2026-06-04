@@ -3,7 +3,6 @@ import MoversList from '@/components/seo/MoversList'
 import { getUpperCircuitStocks } from '@/lib/sectors/moversLib'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Upper Circuit Stocks Today — NSE Stocks Hitting Upper Limit | NiftyPulse360',

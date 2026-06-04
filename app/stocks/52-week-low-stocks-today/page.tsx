@@ -3,7 +3,6 @@ import MoversList from '@/components/seo/MoversList'
 import { get52WeekLowStocks } from '@/lib/sectors/moversLib'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: '52-Week Low Stocks Today — NSE Stocks at Yearly Low | NiftyPulse360',

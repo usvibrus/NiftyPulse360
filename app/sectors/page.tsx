@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 600
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 

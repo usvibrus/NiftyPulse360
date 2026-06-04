@@ -6,7 +6,6 @@ import { format } from 'date-fns'
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 600
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 

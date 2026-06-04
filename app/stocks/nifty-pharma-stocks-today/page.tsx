@@ -3,7 +3,6 @@ import MoversList from '@/components/seo/MoversList'
 import { getSectorMovers } from '@/lib/sectors/moversLib'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Nifty Pharma Stocks Today — Live NSE Pharma Index | NiftyPulse360',

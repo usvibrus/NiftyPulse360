@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
 
 function delay(ms: number) {
@@ -7,10 +6,13 @@ function delay(ms: number) {
 
 async function getOrgId(accessToken: string): Promise<string | null> {
   try {
-    const res = await axios.get('https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(organizationalTarget~(localizedName)))', {
+    const res = await fetch('https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(organizationalTarget~(localizedName)))', {
       headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10000),
     })
-    const elements = res.data.elements
+    if (!res.ok) return null
+    const data = await res.json()
+    const elements = data.elements
     if (elements && elements.length > 0) {
       return elements[0].organizationalTarget
     }
@@ -34,10 +36,13 @@ export async function postToLinkedIn() {
   if (author === 'unknown') {
     // Try posting as person
     try {
-      const profileRes = await axios.get('https://api.linkedin.com/v2/userinfo', {
+      const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
         headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
       })
-      const personUrn = `urn:li:person:${profileRes.data.sub}`
+      if (!profileRes.ok) return { posted }
+      const profileData = await profileRes.json()
+      const personUrn = `urn:li:person:${profileData.sub}`
 
       const stocks = await prisma.stockEvent.findMany({
         where: { tweetPosted: false, isPublished: true },
@@ -52,12 +57,17 @@ export async function postToLinkedIn() {
         const text = `${emoji} ${s.companyName} (${s.symbol}) shares ${verb} ${s.changePercent.toFixed(1)}% today on NSE\n\nFind out why: ${siteUrl}/stocks/${s.slug}\n\n#StockMarket #NSE #IndianStocks #${s.symbol}`
 
         try {
-          await axios.post('https://api.linkedin.com/v2/ugcPosts', {
-            author: personUrn,
-            lifecycleState: 'PUBLISHED',
-            specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text }, shareMediaCategory: 'ARTICLE', media: [{ status: 'READY', originalUrl: `${siteUrl}/stocks/${s.slug}` }] } },
-            visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
-          }, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } })
+          await fetch('https://api.linkedin.com/v2/ugcPosts', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              author: personUrn,
+              lifecycleState: 'PUBLISHED',
+              specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text }, shareMediaCategory: 'ARTICLE', media: [{ status: 'READY', originalUrl: `${siteUrl}/stocks/${s.slug}` }] } },
+              visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
+            }),
+            signal: AbortSignal.timeout(15000),
+          })
 
           await prisma.stockEvent.update({ where: { id: s.id }, data: { tweetPosted: true } })
           posted++

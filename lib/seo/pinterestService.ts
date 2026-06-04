@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { prisma } from '@/lib/db/prisma'
 
 function delay(ms: number) {
@@ -7,11 +6,14 @@ function delay(ms: number) {
 
 async function getFirstBoard(accessToken: string): Promise<string | null> {
   try {
-    const res = await axios.get('https://api.pinterest.com/v5/boards', {
+    const res = await fetch('https://api.pinterest.com/v5/boards', {
       headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10000),
     })
-    if (res.data.items && res.data.items.length > 0) {
-      return res.data.items[0].id
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data.items && data.items.length > 0) {
+      return data.items[0].id
     }
     return null
   } catch (error) {
@@ -43,14 +45,17 @@ export async function postToPinterest() {
     const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(s.metaTitle)}&symbol=${s.symbol}&change=${s.changePercent.toFixed(1)}%25&type=${s.eventType}`
 
     try {
-      await axios.post('https://api.pinterest.com/v5/pins', {
-        board_id: boardId,
-        title: s.metaTitle,
-        description: `${s.metaDesc} #StockMarket #NSE #${s.symbol}`,
-        link: pageUrl,
-        media_source: { source_type: 'image_url', url: ogImage },
-      }, {
+      await fetch('https://api.pinterest.com/v5/pins', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_id: boardId,
+          title: s.metaTitle,
+          description: `${s.metaDesc} #StockMarket #NSE #${s.symbol}`,
+          link: pageUrl,
+          media_source: { source_type: 'image_url', url: ogImage },
+        }),
+        signal: AbortSignal.timeout(15000),
       })
       posted++
       await delay(5000)

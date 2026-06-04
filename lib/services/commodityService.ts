@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { getYahooFinance } from './yahooLazy'
 
 export interface CommodityData {
@@ -57,8 +56,12 @@ export async function getCurrencyMovers(): Promise<CurrencyData[]> {
   const yahooFinance = await getYahooFinance()
 
   try {
-    const res = await axios.get(`https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/latest/USD`)
-    const rates = res.data.conversion_rates
+    const res = await fetch(`https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/latest/USD`, {
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) return movers
+    const data = await res.json()
+    const rates = data.conversion_rates
     if (!rates) return movers
 
     const pairs = [

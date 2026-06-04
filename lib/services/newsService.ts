@@ -1,5 +1,4 @@
 import Parser from 'rss-parser'
-import axios from 'axios'
 
 export interface NewsItem {
   title: string
@@ -102,17 +101,20 @@ async function fetchMarketaux(symbol: string): Promise<NewsItem[]> {
   const cutoff = Date.now() - HOURS_48_MS
 
   try {
-    const res = await axios.get('https://api.marketaux.com/v1/news/all', {
-      params: {
-        symbols: symbol,
-        filter_entities: true,
-        language: 'en',
-        api_token: process.env.MARKETAUX_API_KEY,
-        limit: 5,
-      },
+    const params = new URLSearchParams({
+      symbols: symbol,
+      filter_entities: 'true',
+      language: 'en',
+      api_token: process.env.MARKETAUX_API_KEY!,
+      limit: '5',
     })
+    const res = await fetch(`https://api.marketaux.com/v1/news/all?${params}`, {
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) return []
+    const json = await res.json()
 
-    return (res.data.data || [])
+    return (json.data || [])
       .map((item: { title: string; url: string; source: string; published_at: string; description: string }) => {
         const pubDate = new Date(item.published_at)
         return {

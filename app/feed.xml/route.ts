@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 60
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 const PUB_NAME = 'NiftyPulse360'

@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { NewsItem } from './newsService'
 
 export interface StockAnalysisInput {
@@ -103,6 +102,7 @@ async function generateWithGemini(stock: StockAnalysisInput, news: NewsItem[]): 
   if (!key) return null
 
   try {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai')
     const genAI = new GoogleGenerativeAI(key)
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
     const result = await model.generateContent(buildPrompt(stock, news))
