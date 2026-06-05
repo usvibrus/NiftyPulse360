@@ -1,22 +1,27 @@
 const BASE = process.env.CRON_URL || 'https://niftypulse360-production.up.railway.app'
 const SECRET = process.env.CRON_SECRET
 
-// Get current IST hour
+// Get current IST time
 const nowUTC = new Date()
-const istHour = (nowUTC.getUTCHours() + 5) % 24 + (nowUTC.getUTCMinutes() + 30 >= 60 ? 1 : 0)
-const istMinute = (nowUTC.getUTCMinutes() + 30) % 60
+const istOffsetMs = (5 * 60 + 30) * 60 * 1000
+const istDate = new Date(nowUTC.getTime() + istOffsetMs)
+const istHour = istDate.getUTCHours()
+const istMinute = istDate.getUTCMinutes()
+const istDay = istDate.getUTCDay() // 0=Sun, 6=Sat
 
-console.log(`[cron] IST time: ${istHour}:${String(istMinute).padStart(2, '0')}`)
+console.log(`[cron] IST time: ${istHour}:${String(istMinute).padStart(2, '0')} (day: ${istDay})`)
 
-// Always run: stock market data (during market hours 9-16 IST)
-const endpoints = []
-
-if (istHour >= 9 && istHour <= 16) {
-  endpoints.push('/api/cron/stocks', '/api/cron/indices', '/api/cron/gold', '/api/cron/commodities')
+// Skip weekends entirely — market is closed, no data to fetch, let the service sleep
+if (istDay === 0 || istDay === 6) {
+  console.log('[cron] Weekend — skipping all endpoints to save resources')
+  process.exit(0)
 }
 
-// IPO cron: every run during 9-16 IST (same as stocks)
+const endpoints = []
+
+// Stock market data (during market hours 9-16 IST)
 if (istHour >= 9 && istHour <= 16) {
+  endpoints.push('/api/cron/stocks', '/api/cron/indices', '/api/cron/gold', '/api/cron/commodities')
   endpoints.push('/api/cron/ipo')
 }
 
@@ -30,9 +35,15 @@ if (istHour >= 16 && istHour <= 17) {
   endpoints.push('/api/cron/market-wrap')
 }
 
-// Fallback: if no endpoints matched (off-hours), still run IPO for GMP updates
-if (endpoints.length === 0) {
+// IPO GMP updates: run once in the evening (19-20 IST) on weekdays
+if (istHour >= 19 && istHour <= 20) {
   endpoints.push('/api/cron/ipo')
+}
+
+// Off-hours: nothing to do — let the service scale to zero
+if (endpoints.length === 0) {
+  console.log('[cron] Off-hours — no endpoints to run')
+  process.exit(0)
 }
 
 async function run() {
