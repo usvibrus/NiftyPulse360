@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/db/prisma'
+import { getGoogleAccessToken } from '@/lib/services/googleAuthLite'
 
 const SITE = () => process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 
-// LAYER 1: Google Indexing API — direct ping to Google
-// googleapis is ~100-150MB in memory, so we dynamic-import it only when needed
+// LAYER 1: Google Indexing API — direct REST call (no googleapis SDK)
 async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETED' = 'URL_UPDATED'): Promise<boolean> {
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
   const privateKey = process.env.GOOGLE_INDEXING_SA_PRIVATE_KEY
@@ -13,14 +13,21 @@ async function pingGoogleIndexing(url: string, type: 'URL_UPDATED' | 'URL_DELETE
   }
 
   try {
-    const { google } = await import('googleapis')
-    const auth = new google.auth.JWT({
-      email,
-      key: privateKey.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/indexing'],
+    const token = await getGoogleAccessToken(email, privateKey, 'https://www.googleapis.com/auth/indexing')
+    const res = await fetch('https://indexing.googleapis.com/v3/urlNotifications:publish', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url, type }),
+      signal: AbortSignal.timeout(10000),
     })
-    const indexing = google.indexing({ version: 'v3', auth })
-    await indexing.urlNotifications.publish({ requestBody: { url, type } })
+    if (!res.ok) {
+      const body = await res.text()
+      console.error(`[indexing] Google Indexing HTTP ${res.status} for ${url}: ${body.slice(0, 200)}`)
+      return false
+    }
     console.log(`[indexing] Google Indexing OK: ${url}`)
     return true
   } catch (error) {

@@ -95,26 +95,43 @@ function parseJsonResponse(text: string): AnalysisResult | null {
 }
 
 // ──────────────────────────────────────────
-// PROVIDER 1: Gemini (Google) — primary
+// PROVIDER 1: Gemini (Google) — direct REST (no SDK, saves ~20-30MB RAM)
 // ──────────────────────────────────────────
 async function generateWithGemini(stock: StockAnalysisInput, news: NewsItem[]): Promise<AnalysisResult | null> {
   const key = process.env.GEMINI_API_KEY
   if (!key) return null
 
   try {
-    const { GoogleGenerativeAI } = await import('@google/generative-ai')
-    const genAI = new GoogleGenerativeAI(key)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-    const result = await model.generateContent(buildPrompt(stock, news))
-    return parseJsonResponse(result.response.text())
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: buildPrompt(stock, news) }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1200 },
+        }),
+        signal: AbortSignal.timeout(60000),
+      }
+    )
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      if (res.status === 429 || body.toLowerCase().includes('quota')) {
+        console.warn(`[aiAnalysis:gemini] quota exceeded for ${stock.symbol}`)
+      } else {
+        console.warn(`[aiAnalysis:gemini] HTTP ${res.status} for ${stock.symbol}: ${body.slice(0, 200)}`)
+      }
+      return null
+    }
+
+    const data = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!text) return null
+    return parseJsonResponse(text)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    // Compact log — don't dump the giant axios object
-    if (msg.includes('429') || msg.toLowerCase().includes('quota')) {
-      console.warn(`[aiAnalysis:gemini] quota exceeded for ${stock.symbol}`)
-    } else {
-      console.warn(`[aiAnalysis:gemini] failed for ${stock.symbol}:`, msg.slice(0, 200))
-    }
+    console.warn(`[aiAnalysis:gemini] failed for ${stock.symbol}:`, msg.slice(0, 200))
     return null
   }
 }

@@ -3,7 +3,6 @@ import { verifyCronAuth } from '@/lib/utils/cronAuth'
 import { generateStockPages } from '@/lib/generators/pageGenerator'
 import { processIndexingQueue } from '@/lib/seo/indexingService'
 import { postToLinkedIn } from '@/lib/seo/linkedinService'
-import { postToPinterest } from '@/lib/seo/pinterestService'
 import { postToDevTo } from '@/lib/seo/devtoService'
 import { postToTelegraph } from '@/lib/seo/telegraphService'
 
@@ -16,10 +15,9 @@ export async function POST(request: Request) {
     const result = await generateStockPages()
     const indexing = await processIndexingQueue()
     const linkedin = await postToLinkedIn()
-    const pinterest = await postToPinterest()
     const devto = await postToDevTo()
     const telegraph = await postToTelegraph()
-    return NextResponse.json({ success: true, ...result, indexing, linkedin, pinterest, devto, telegraph })
+    return NextResponse.json({ success: true, ...result, indexing, linkedin, devto, telegraph })
   } catch (error) {
     console.error('[cron/stocks] Error:', error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })

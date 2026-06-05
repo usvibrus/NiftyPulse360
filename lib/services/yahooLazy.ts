@@ -1,29 +1,53 @@
 /**
- * Lazy Yahoo Finance loader.
+ * Lightweight Yahoo Finance REST client — replaces the yahoo-finance2 SDK.
  *
- * Why this exists: yahoo-finance2 maintains an internal tough-cookie jar
- * that grows with every request and never gets cleaned. When the library is
- * imported at module scope, the jar lives for the lifetime of the server,
- * causing slow memory growth (observed: 250 MB → 600 MB over 12 hours).
- *
- * By creating a fresh instance inside an async function and letting it go
- * out of scope after each call, the cookie jar gets garbage-collected and
- * memory stays flat.
- *
- * Usage:
- *   const yf = await getYahooFinance()
- *   const quote = await yf.quote('^NSEI')
- *   // yf goes out of scope, GC reclaims its cookie jar
+ * The SDK adds ~50-80 MB to process memory because it caches modules, maintains
+ * a tough-cookie jar, and bundles dozens of unused sub-modules. This file does
+ * the same two things we actually use (quote, quoteSummary) via direct HTTP
+ * calls to Yahoo's public v6/v10 API. No cookies, no module-scope state, no
+ * memory growth.
  */
-export async function getYahooFinance() {
-  // Dynamic import so the package is only loaded the first time it's needed.
-  // After the first call Node caches the module, but each call still gets a
-  // fresh instance with its own (small) cookie jar.
-  const mod = await import('yahoo-finance2')
-  // Default export is the YahooFinance class
-  const YahooFinance = (mod as unknown as { default: new (opts?: unknown) => unknown }).default
-  return new YahooFinance({ suppressNotices: ['yahooSurvey'] }) as {
-    quote: (symbol: string) => Promise<unknown>
-    quoteSummary: (symbol: string, opts: { modules: string[] }) => Promise<unknown>
+
+const YF_BASE = 'https://query2.finance.yahoo.com'
+
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'application/json',
+}
+
+async function yfFetch(path: string): Promise<unknown> {
+  const res = await fetch(`${YF_BASE}${path}`, {
+    headers: HEADERS,
+    signal: AbortSignal.timeout(15000),
+  })
+  if (!res.ok) {
+    throw new Error(`Yahoo Finance HTTP ${res.status}: ${path}`)
+  }
+  return res.json()
+}
+
+interface YFClient {
+  quote: (symbol: string) => Promise<unknown>
+  quoteSummary: (symbol: string, opts: { modules: string[] }) => Promise<unknown>
+}
+
+export async function getYahooFinance(): Promise<YFClient> {
+  return {
+    async quote(symbol: string): Promise<unknown> {
+      const data = await yfFetch(`/v6/finance/quote?symbols=${encodeURIComponent(symbol)}`) as {
+        quoteResponse?: { result?: unknown[] }
+      }
+      const result = data?.quoteResponse?.result?.[0]
+      return result || null
+    },
+
+    async quoteSummary(symbol: string, opts: { modules: string[] }): Promise<unknown> {
+      const modules = opts.modules.join(',')
+      const data = await yfFetch(`/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}`) as {
+        quoteSummary?: { result?: Array<Record<string, unknown>> }
+      }
+      const result = data?.quoteSummary?.result?.[0]
+      return result || {}
+    },
   }
 }

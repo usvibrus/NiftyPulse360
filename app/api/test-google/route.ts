@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { google } from 'googleapis'
+import { getGoogleAccessToken } from '@/lib/services/googleAuthLite'
 
 export async function GET() {
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
@@ -11,33 +11,28 @@ export async function GET() {
 
   try {
     // Test 1: Search Console - can we list sites?
-    const scAuth = new google.auth.JWT({
-      email,
-      key: privateKey.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    const scToken = await getGoogleAccessToken(email, privateKey, 'https://www.googleapis.com/auth/webmasters.readonly')
+    const sitesRes = await fetch('https://searchconsole.googleapis.com/webmasters/v1/sites', {
+      headers: { Authorization: `Bearer ${scToken}` },
+      signal: AbortSignal.timeout(10000),
     })
-    const searchConsole = google.searchconsole({ version: 'v1', auth: scAuth })
-    const sitesResponse = await searchConsole.sites.list()
+    const sitesData = await sitesRes.json()
+    const siteEntries = sitesData.siteEntry || []
 
-    // Test 2: Indexing API - try a dry test (won't actually publish)
-    const indexAuth = new google.auth.JWT({
-      email,
-      key: privateKey.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/indexing'],
-    })
-    await indexAuth.authorize()
+    // Test 2: Indexing API - verify auth works
+    const indexToken = await getGoogleAccessToken(email, privateKey, 'https://www.googleapis.com/auth/indexing')
 
     return NextResponse.json({
       success: true,
       serviceAccountEmail: email,
       searchConsole: {
-        sitesAccessible: sitesResponse.data.siteEntry?.length || 0,
-        sites: sitesResponse.data.siteEntry || [],
+        sitesAccessible: siteEntries.length,
+        sites: siteEntries,
       },
-      indexingApiAuth: 'OK',
-      nextSteps: sitesResponse.data.siteEntry && sitesResponse.data.siteEntry.length > 0
-        ? '✅ Service account has access — Indexing API should work now'
-        : `❌ Service account is NOT yet added as owner. Add ${email} as Owner in Search Console.`,
+      indexingApiAuth: indexToken ? 'OK' : 'FAILED',
+      nextSteps: siteEntries.length > 0
+        ? 'Service account has access — Indexing API should work now'
+        : `Service account is NOT yet added as owner. Add ${email} as Owner in Search Console.`,
     })
   } catch (error: unknown) {
     const err = error as { message?: string; response?: { data?: unknown } }
