@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema'
+import StockTimeline from '@/components/ui/StockTimeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,16 @@ export default async function StockSymbolHub({ params }: { params: Promise<{ sym
         {sector && <> · Sector: <Link href={`/sectors/${sectorSlug}`} className="text-[#1565C0] hover:underline">{sector}</Link></>}
       </p>
       <p className="text-sm text-[#666] mb-6">All published explanations for significant moves of {latest.companyName} stock. Updated after every NSE trading session.</p>
+
+      {/* Stock Timeline */}
+      <StockTimeline
+        symbol={sym}
+        events={events.map(e => ({
+          eventDate: format(e.eventDate, 'dd MMM'),
+          eventType: e.eventType,
+          changePercent: e.changePercent,
+        }))}
+      />
 
       <section>
         <div className="section-header"><span>📚 All Recent Analyses ({events.length})</span></div>

@@ -4,10 +4,12 @@ import { prisma } from '@/lib/db/prisma'
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/stocks', label: 'Stocks' },
+  { href: '/ipo', label: 'IPO' },
   { href: '/indices', label: 'Indices' },
   { href: '/gold', label: 'Gold & Silver' },
   { href: '/commodities', label: 'Commodities' },
-  { href: '/blog', label: 'Blog' },
+  { href: '/market-wrap', label: 'Market Wrap' },
+  { href: '/pre-market-today', label: 'Pre-Market' },
 ]
 
 async function getTickerData() {

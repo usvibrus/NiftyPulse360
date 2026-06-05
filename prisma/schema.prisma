@@ -169,3 +169,149 @@ model IndexingQueue {
 
   @@index([success])
 }
+
+model IpoEvent {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  companyName     String
+  symbol          String?
+  ipoType         String
+  exchange        String
+  status          String
+
+  priceBandMin    Float?
+  priceBandMax    Float?
+  issuePrice      Float?
+  lotSize         Int?
+  issueSizeCr     Float?
+  freshIssue      Float?
+  offerForSale    Float?
+
+  openDate        DateTime?
+  closeDate       DateTime?
+  allotmentDate   DateTime?
+  refundDate      DateTime?
+  listingDate     DateTime?
+
+  gmpValue        Float?
+  gmpPercent      Float?
+  gmpHistory      Json?
+  gmpUpdatedAt    DateTime?
+
+  subscriptionData      Json?
+  subscriptionUpdatedAt DateTime?
+
+  listingPrice    Float?
+  listingGainLoss Float?
+  listingDayClose Float?
+  currentPrice    Float?
+
+  aboutCompany    String?
+  promoterHolding Float?
+  financials      Json?
+  objectOfIssue   String?
+
+  registrarName   String?
+  registrarUrl    String?
+  leadManagers    String[]
+
+  aiAnalysis      String?
+  faqContent      Json?
+  pageContent     String?
+  metaTitle       String
+  metaDesc        String
+  keywords        String[]
+
+  publishedAt     DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  isPublished     Boolean   @default(true)
+  pageViews       Int       @default(0)
+  googleIndexed   Boolean   @default(false)
+  tweetPosted     Boolean   @default(false)
+
+  listingSlug         String?  @unique
+  listingPageContent  String?
+  listingMetaTitle    String?
+  listingMetaDesc     String?
+  listingPublishedAt  DateTime?
+
+  @@index([status])
+  @@index([ipoType])
+  @@index([openDate])
+  @@index([listingDate])
+  @@index([publishedAt])
+}
+
+model MarketWrap {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  wrapDate        DateTime @unique
+
+  niftyClose      Float?
+  niftyChange     Float?
+  niftyChangePct  Float?
+  sensexClose     Float?
+  sensexChange    Float?
+  sensexChangePct Float?
+  bankNiftyClose  Float?
+  bankNiftyChange Float?
+
+  topGainers      Json?
+  topLosers       Json?
+  sectorSummary   Json?
+
+  aiSummary       String?
+  pageContent     String
+  metaTitle       String
+  metaDesc        String
+  keywords        String[]
+
+  publishedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isPublished     Boolean  @default(true)
+  googleIndexed   Boolean  @default(false)
+
+  @@index([wrapDate])
+}
+
+model PreMarketData {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  dataDate        DateTime @unique
+
+  giftNifty       Float?
+  giftNiftyChange Float?
+  giftNiftyPct    Float?
+  dowJones        Float?
+  dowChange       Float?
+  sp500           Float?
+  sp500Change     Float?
+  nasdaq          Float?
+  nasdaqChange    Float?
+
+  crudeOil        Float?
+  crudeChange     Float?
+  goldPrice       Float?
+  goldChange      Float?
+
+  usdInr          Float?
+  usdInrChange    Float?
+
+  nikkei          Float?
+  nikkeiChange    Float?
+  hangSeng        Float?
+  hangSengChange  Float?
+
+  aiExpectation   String?
+  pageContent     String
+  metaTitle       String
+  metaDesc        String
+  keywords        String[]
+
+  publishedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isPublished     Boolean  @default(true)
+  googleIndexed   Boolean  @default(false)
+
+  @@index([dataDate])
+}
