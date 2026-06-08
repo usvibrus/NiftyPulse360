@@ -18,14 +18,15 @@ export interface StockMoverData {
   marketCap: number
   week52High: number
   week52Low: number
+  capCategory: 'largecap' | 'midcap' | 'smallcap'
 }
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-// Curated list of liquid Nifty 50 + Nifty Next 50 stocks. Limited to ~50 to keep cron under timeout.
-const STOCK_UNIVERSE = [
+// Large-cap: Nifty 50 (market cap > 50,000 Cr typically)
+const LARGECAP_STOCKS = [
   'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
   'HINDUNILVR', 'SBIN', 'BHARTIARTL', 'KOTAKBANK', 'ITC',
   'LT', 'AXISBANK', 'BAJFINANCE', 'MARUTI', 'TATAMOTORS',
@@ -38,7 +39,32 @@ const STOCK_UNIVERSE = [
   'TATACONSUM', 'UPL', 'SHRIRAMFIN', 'ADANIPORTS', 'HINDALCO',
 ]
 
-// Sector mapping for known stocks (since Google Finance doesn't expose sector cleanly)
+// Mid-cap: Nifty Midcap 50 — stocks between 5,000 - 50,000 Cr market cap
+const MIDCAP_STOCKS = [
+  'PERSISTENT', 'COFORGE', 'MPHASIS', 'LTIM', 'POLYCAB',
+  'PIIND', 'ASTRAL', 'VOLTAS', 'PAGEIND', 'TRENT',
+  'CUMMINSIND', 'GODREJCP', 'COLPAL', 'BERGEPAINT', 'INDHOTEL',
+  'FEDERALBNK', 'IDFCFIRSTB', 'BANDHANBNK', 'MUTHOOTFIN', 'MANAPPURAM',
+  'LICHSGFIN', 'PEL', 'CONCOR', 'IRCTC', 'HUDCO',
+  'SAIL', 'NMDC', 'NATIONALUM', 'HINDPETRO', 'GAIL',
+  'PETRONET', 'IGL', 'TORNTPOWER', 'NHPC', 'SJVN',
+  'RECLTD', 'PFC', 'CANFINHOME', 'AARTIIND', 'DEEPAKNTR',
+]
+
+// Small-cap: Popular traded small-caps — high volatility, big % moves daily
+const SMALLCAP_STOCKS = [
+  'YESBANK', 'IDEA', 'SUZLON', 'IRFC', 'NHPC',
+  'RBLBANK', 'IBREALEST', 'INFIBEAM', 'DELTACORP', 'NETWORK18',
+  'TV18BRDCST', 'TATACHEM', 'CHAMBLFERT', 'GNFC', 'GSFC',
+  'ORIENTELEC', 'APLAPOLLO', 'FINEORG', 'CLEAN', 'KPITTECH',
+  'TATAELXSI', 'HAPPSTMNDS', 'ROUTE', 'CDSL', 'ANGELONE',
+  'RAILTEL', 'RVNL', 'IRCON', 'BEL', 'HAL',
+  'COCHINSHIP', 'MAZAGON', 'GRINDWELL', 'TIINDIA', 'CERA',
+  'KAJARIACER', 'BLUESTARCO', 'DIXON', 'KAYNES', 'OLECTRA',
+  'EXIDEIND', 'AMARAJABAT', 'JBCHEPHARM', 'SOLARINDS', 'NIACL',
+  'HFCL', 'TANLA', 'TEJASNET', 'ZENTEC', 'MAZDOCK',
+]
+
 const SECTOR_MAP: Record<string, string> = {
   RELIANCE: 'Energy', TCS: 'IT', HDFCBANK: 'Banking', INFY: 'IT', ICICIBANK: 'Banking',
   HINDUNILVR: 'FMCG', SBIN: 'Banking', BHARTIARTL: 'Telecom', KOTAKBANK: 'Banking', ITC: 'FMCG',
@@ -50,24 +76,49 @@ const SECTOR_MAP: Record<string, string> = {
   CIPLA: 'Pharma', DRREDDY: 'Pharma', TECHM: 'IT', BRITANNIA: 'FMCG', EICHERMOT: 'Auto',
   HEROMOTOCO: 'Auto', BPCL: 'Energy', IOC: 'Energy', DIVISLAB: 'Pharma', APOLLOHOSP: 'Healthcare',
   TATACONSUM: 'FMCG', UPL: 'Chemicals', SHRIRAMFIN: 'NBFC', ADANIPORTS: 'Infrastructure', HINDALCO: 'Metals',
+  PERSISTENT: 'IT', COFORGE: 'IT', MPHASIS: 'IT', LTIM: 'IT', POLYCAB: 'Electricals',
+  PIIND: 'Chemicals', ASTRAL: 'Plastics', VOLTAS: 'Consumer', TRENT: 'Retail', PAGEIND: 'Textiles',
+  CUMMINSIND: 'Engineering', GODREJCP: 'FMCG', COLPAL: 'FMCG', BERGEPAINT: 'Paints', INDHOTEL: 'Hotels',
+  FEDERALBNK: 'Banking', IDFCFIRSTB: 'Banking', BANDHANBNK: 'Banking', MUTHOOTFIN: 'NBFC', MANAPPURAM: 'NBFC',
+  SAIL: 'Metals', NMDC: 'Mining', NATIONALUM: 'Metals', HINDPETRO: 'Energy', GAIL: 'Energy',
+  IRCTC: 'Railways', HUDCO: 'Finance', CONCOR: 'Logistics', PEL: 'Finance', LICHSGFIN: 'Finance',
+  YESBANK: 'Banking', IDEA: 'Telecom', SUZLON: 'Renewables', IRFC: 'Railways', NHPC: 'Power',
+  RBLBANK: 'Banking', IBREALEST: 'Realty', DELTACORP: 'Gaming', TATACHEM: 'Chemicals',
+  KPITTECH: 'IT', TATAELXSI: 'IT', HAPPSTMNDS: 'IT', CDSL: 'Finance', ANGELONE: 'Finance',
+  RAILTEL: 'Railways', RVNL: 'Railways', IRCON: 'Railways', BEL: 'Defence', HAL: 'Defence',
+  COCHINSHIP: 'Defence', MAZAGON: 'Defence', DIXON: 'Electronics', KAYNES: 'Electronics', OLECTRA: 'EV',
+  EXIDEIND: 'Auto', AMARAJABAT: 'Auto', HFCL: 'Telecom', TANLA: 'IT', MAZDOCK: 'Defence',
+  RECLTD: 'Power', PFC: 'Power', TORNTPOWER: 'Power', SJVN: 'Power', PETRONET: 'Energy', IGL: 'Energy',
 }
 
-async function fetchGoogleMovers(): Promise<StockMoverData[]> {
-  const movers: StockMoverData[] = []
+// Minimum % change thresholds per category
+const MIN_CHANGE_LARGECAP = 4
+const MIN_CHANGE_MIDCAP = 4
+const MIN_CHANGE_SMALLCAP = 6
 
-  for (const symbol of STOCK_UNIVERSE) {
+function getMinThreshold(capCategory: 'largecap' | 'midcap' | 'smallcap'): number {
+  switch (capCategory) {
+    case 'largecap': return MIN_CHANGE_LARGECAP
+    case 'midcap': return MIN_CHANGE_MIDCAP
+    case 'smallcap': return MIN_CHANGE_SMALLCAP
+  }
+}
+
+async function fetchMoversForCategory(
+  symbols: string[],
+  capCategory: 'largecap' | 'midcap' | 'smallcap'
+): Promise<StockMoverData[]> {
+  const movers: StockMoverData[] = []
+  const minChange = getMinThreshold(capCategory)
+
+  for (const symbol of symbols) {
     try {
       const stock = await fetchGoogleFinanceStock(symbol)
-      await delay(400) // be polite to Google
+      await delay(350)
 
       if (!stock) continue
-
-      // Filter by minimum % move (>= 1%)
-      if (Math.abs(stock.changePercent) < 1) continue
-
-      // Volume not available from Google Finance compact stats - use avgVolume as proxy
-      // Skip if no avgVolume data (likely failed parse)
       if (stock.avgVolume <= 0) continue
+      if (Math.abs(stock.changePercent) < minChange) continue
 
       movers.push({
         symbol: stock.symbol,
@@ -77,15 +128,16 @@ async function fetchGoogleMovers(): Promise<StockMoverData[]> {
         eventType: stock.changePercent > 0 ? 'RISE' : 'FALL',
         changePercent: Math.abs(stock.changePercent),
         changeAmount: Math.abs(stock.change),
-        openPrice: stock.prevClose, // Google Finance shows "Open" which we mapped to prevClose
+        openPrice: stock.prevClose,
         closePrice: stock.price,
         highPrice: stock.dayHigh || stock.price,
         lowPrice: stock.dayLow || stock.price,
-        volume: stock.avgVolume, // Use avg volume as today's volume proxy
+        volume: stock.avgVolume,
         avgVolume: stock.avgVolume,
         marketCap: stock.marketCap,
         week52High: stock.yearHigh,
         week52Low: stock.yearLow,
+        capCategory,
       })
     } catch (error) {
       console.error(`[stockService] Google Finance failed for ${symbol}:`, error instanceof Error ? error.message : error)
@@ -95,62 +147,13 @@ async function fetchGoogleMovers(): Promise<StockMoverData[]> {
   return movers
 }
 
-async function fetchYahooFallback(): Promise<StockMoverData[]> {
-  const movers: StockMoverData[] = []
-
-  // Lazy-load Yahoo Finance to prevent its cookie jar from leaking across requests.
-  // The instance lives only for this function call, then gets garbage-collected.
-  const yahooFinance = await getYahooFinance()
-
-  for (const sym of STOCK_UNIVERSE.slice(0, 25)) {
-    try {
-      const yahooSym = `${sym}.NS`
-      const quote = await yahooFinance.quote(yahooSym) as Record<string, unknown>
-      if (!quote) continue
-      const pChange = (quote.regularMarketChangePercent as number) ?? 0
-      const volume = (quote.regularMarketVolume as number) ?? 0
-
-      if (Math.abs(pChange) < 1 || volume < 100000) continue
-
-      const summary = await yahooFinance.quoteSummary(yahooSym, { modules: ['assetProfile', 'summaryDetail'] }) as { assetProfile?: { sector?: string; industry?: string }; summaryDetail?: { averageVolume10days?: number; averageDailyVolume3Month?: number } }
-      const avgVolume = (summary.summaryDetail?.averageDailyVolume3Month as number) || (summary.summaryDetail?.averageVolume10days as number) || 0
-
-      movers.push({
-        symbol: sym,
-        companyName: (quote.shortName as string) || sym,
-        exchange: 'NSE',
-        sector: summary.assetProfile?.industry || summary.assetProfile?.sector || SECTOR_MAP[sym] || 'Unknown',
-        eventType: pChange > 0 ? 'RISE' : 'FALL',
-        changePercent: Math.abs(pChange),
-        changeAmount: Math.abs((quote.regularMarketChange as number) ?? 0),
-        openPrice: (quote.regularMarketOpen as number) ?? 0,
-        closePrice: (quote.regularMarketPrice as number) ?? 0,
-        highPrice: (quote.regularMarketDayHigh as number) ?? 0,
-        lowPrice: (quote.regularMarketDayLow as number) ?? 0,
-        volume,
-        avgVolume,
-        marketCap: (quote.marketCap as number) ?? 0,
-        week52High: (quote.fiftyTwoWeekHigh as number) ?? 0,
-        week52Low: (quote.fiftyTwoWeekLow as number) ?? 0,
-      })
-      await delay(300)
-    } catch (error) {
-      console.error(`[stockService] Yahoo fallback failed for ${sym}:`, error instanceof Error ? error.message : error)
-    }
-  }
-
-  return movers
-}
-
 export async function getNiftyChangePercent(): Promise<number | null> {
-  // Try Google Finance first
   try {
     const { fetchGoogleFinanceQuote } = await import('./googleFinanceService')
     const gf = await fetchGoogleFinanceQuote('^NSEI')
     if (gf && Number.isFinite(gf.changePercent)) return gf.changePercent
   } catch {}
 
-  // Fallback to Yahoo
   try {
     const yahooFinance = await getYahooFinance()
     const quote = await yahooFinance.quote('^NSEI') as Record<string, unknown>
@@ -161,15 +164,20 @@ export async function getNiftyChangePercent(): Promise<number | null> {
 }
 
 export async function getStockMovers(): Promise<StockMoverData[]> {
-  let movers = await fetchGoogleMovers()
-  console.log(`[stockService] Google Finance returned ${movers.length} movers`)
+  // Fetch all categories — biggest movers only
+  const [largecap, midcap, smallcap] = await Promise.all([
+    fetchMoversForCategory(LARGECAP_STOCKS, 'largecap'),
+    fetchMoversForCategory(MIDCAP_STOCKS, 'midcap'),
+    fetchMoversForCategory(SMALLCAP_STOCKS, 'smallcap'),
+  ])
 
-  if (movers.length === 0) {
-    console.log('[stockService] Google returned 0 movers, trying Yahoo fallback')
-    movers = await fetchYahooFallback()
-  }
+  console.log(`[stockService] Movers found — largecap: ${largecap.length}, midcap: ${midcap.length}, smallcap: ${smallcap.length}`)
 
-  // Sort by absolute change percent (biggest movers first), limit to 30
-  movers.sort((a, b) => b.changePercent - a.changePercent)
-  return movers.slice(0, 30)
+  const allMovers = [...largecap, ...midcap, ...smallcap]
+
+  // Sort by absolute change percent — biggest movers first (most searched)
+  allMovers.sort((a, b) => b.changePercent - a.changePercent)
+
+  // Limit to top 20 biggest movers across all categories
+  return allMovers.slice(0, 20)
 }
