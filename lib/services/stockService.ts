@@ -164,12 +164,10 @@ export async function getNiftyChangePercent(): Promise<number | null> {
 }
 
 export async function getStockMovers(): Promise<StockMoverData[]> {
-  // Fetch all categories — biggest movers only
-  const [largecap, midcap, smallcap] = await Promise.all([
-    fetchMoversForCategory(LARGECAP_STOCKS, 'largecap'),
-    fetchMoversForCategory(MIDCAP_STOCKS, 'midcap'),
-    fetchMoversForCategory(SMALLCAP_STOCKS, 'smallcap'),
-  ])
+  // Run sequentially to avoid 140 concurrent fetches eating all memory
+  const largecap = await fetchMoversForCategory(LARGECAP_STOCKS, 'largecap')
+  const midcap = await fetchMoversForCategory(MIDCAP_STOCKS, 'midcap')
+  const smallcap = await fetchMoversForCategory(SMALLCAP_STOCKS, 'smallcap')
 
   console.log(`[stockService] Movers found — largecap: ${largecap.length}, midcap: ${midcap.length}, smallcap: ${smallcap.length}`)
 
