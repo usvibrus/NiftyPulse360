@@ -4,20 +4,59 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function getOrgId(accessToken: string): Promise<string | null> {
+async function getPersonUrn(accessToken: string): Promise<string | null> {
   try {
-    const res = await fetch('https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(organizationalTarget~(localizedName)))', {
+    const res = await fetch('https://api.linkedin.com/v2/userinfo', {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(10000),
     })
     if (!res.ok) return null
     const data = await res.json()
-    const elements = data.elements
-    if (elements && elements.length > 0) {
-      return elements[0].organizationalTarget
-    }
-    return null
+    return `urn:li:person:${data.sub}`
   } catch {
+    return null
+  }
+}
+
+async function uploadImageToLinkedIn(accessToken: string, personUrn: string, imageUrl: string): Promise<string | null> {
+  try {
+    // Step 1: Register upload
+    const registerRes = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        registerUploadRequest: {
+          recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+          owner: personUrn,
+          serviceRelationships: [{ relationshipType: 'OWNER', identifier: 'urn:li:userGeneratedContent' }],
+        },
+      }),
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!registerRes.ok) return null
+    const registerData = await registerRes.json()
+
+    const uploadUrl = registerData.value?.uploadMechanism?.['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']?.uploadUrl
+    const asset = registerData.value?.asset
+    if (!uploadUrl || !asset) return null
+
+    // Step 2: Fetch the OG image from our server
+    const imageRes = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) })
+    if (!imageRes.ok) return null
+    const imageBuffer = await imageRes.arrayBuffer()
+
+    // Step 3: Upload image to LinkedIn
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'image/png' },
+      body: imageBuffer,
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!uploadRes.ok) return null
+
+    return asset
+  } catch (error) {
+    console.error('[linkedin] Image upload failed:', error instanceof Error ? error.message : error)
     return null
   }
 }
@@ -29,55 +68,71 @@ export async function postToLinkedIn() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
   let posted = 0
 
-  // Get org URN or use person URN
-  const orgId = await getOrgId(accessToken)
-  const author = orgId || 'unknown'
+  const personUrn = await getPersonUrn(accessToken)
+  if (!personUrn) { console.log('[linkedin] Could not get person URN'); return { posted: 0 } }
 
-  if (author === 'unknown') {
-    // Try posting as person
+  const stocks = await prisma.stockEvent.findMany({
+    where: { tweetPosted: false, isPublished: true },
+    take: 3,
+    orderBy: { publishedAt: 'desc' },
+  })
+
+  for (const s of stocks) {
+    if (posted >= 10) break
+    const verb = s.eventType === 'RISE' ? 'rose' : 'fell'
+    const verbAction = s.eventType === 'RISE' ? 'surged' : 'dropped'
+    const emoji = s.eventType === 'RISE' ? '📈' : '📉'
+    const text = `${emoji} ${s.companyName} (${s.symbol}) shares ${verb} ${s.changePercent.toFixed(1)}% today on NSE\n\nFind out why: ${siteUrl}/stocks/${s.slug}\n\n#StockMarket #NSE #IndianStocks #${s.symbol}`
+
+    // Generate OG image URL
+    const imageUrl = `${siteUrl}/api/og?title=${encodeURIComponent(`${s.companyName} shares ${verbAction} ${s.changePercent.toFixed(1)}%`)}&symbol=${encodeURIComponent(s.symbol)}&change=${encodeURIComponent(`${s.changePercent.toFixed(1)}%`)}&type=${s.eventType}`
+
     try {
-      const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!profileRes.ok) return { posted }
-      const profileData = await profileRes.json()
-      const personUrn = `urn:li:person:${profileData.sub}`
+      // Try uploading image for a rich post
+      const imageAsset = await uploadImageToLinkedIn(accessToken, personUrn, imageUrl)
 
-      const stocks = await prisma.stockEvent.findMany({
-        where: { tweetPosted: false, isPublished: true },
-        take: 3,
-        orderBy: { publishedAt: 'desc' },
-      })
-
-      for (const s of stocks) {
-        if (posted >= 10) break
-        const verb = s.eventType === 'RISE' ? 'rose' : 'fell'
-        const emoji = s.eventType === 'RISE' ? '📈' : '📉'
-        const text = `${emoji} ${s.companyName} (${s.symbol}) shares ${verb} ${s.changePercent.toFixed(1)}% today on NSE\n\nFind out why: ${siteUrl}/stocks/${s.slug}\n\n#StockMarket #NSE #IndianStocks #${s.symbol}`
-
-        try {
-          await fetch('https://api.linkedin.com/v2/ugcPosts', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              author: personUrn,
-              lifecycleState: 'PUBLISHED',
-              specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text }, shareMediaCategory: 'ARTICLE', media: [{ status: 'READY', originalUrl: `${siteUrl}/stocks/${s.slug}` }] } },
-              visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
-            }),
-            signal: AbortSignal.timeout(15000),
-          })
-
-          await prisma.stockEvent.update({ where: { id: s.id }, data: { tweetPosted: true } })
-          posted++
-          await delay(5000)
-        } catch (error) {
-          console.error(`[linkedin] Failed to post ${s.symbol}:`, error)
-        }
+      if (imageAsset) {
+        // Post with full-width image
+        await fetch('https://api.linkedin.com/v2/ugcPosts', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            author: personUrn,
+            lifecycleState: 'PUBLISHED',
+            specificContent: { 'com.linkedin.ugc.ShareContent': {
+              shareCommentary: { text },
+              shareMediaCategory: 'IMAGE',
+              media: [{ status: 'READY', media: imageAsset, title: { text: `${s.companyName} (${s.symbol}) ${verb} ${s.changePercent.toFixed(1)}%` }, description: { text: `NSE • ${s.sector || 'Equity'}` } }],
+            } },
+            visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
+          }),
+          signal: AbortSignal.timeout(15000),
+        })
+      } else {
+        // Fallback: post as article link (still shows OG image as preview card)
+        await fetch('https://api.linkedin.com/v2/ugcPosts', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            author: personUrn,
+            lifecycleState: 'PUBLISHED',
+            specificContent: { 'com.linkedin.ugc.ShareContent': {
+              shareCommentary: { text },
+              shareMediaCategory: 'ARTICLE',
+              media: [{ status: 'READY', originalUrl: `${siteUrl}/stocks/${s.slug}` }],
+            } },
+            visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
+          }),
+          signal: AbortSignal.timeout(15000),
+        })
       }
+
+      await prisma.stockEvent.update({ where: { id: s.id }, data: { tweetPosted: true } })
+      posted++
+      console.log(`[linkedin] Posted ${s.symbol} (${imageAsset ? 'with image' : 'article link'})`)
+      await delay(5000)
     } catch (error) {
-      console.error('[linkedin] Failed to get profile:', error)
+      console.error(`[linkedin] Failed to post ${s.symbol}:`, error)
     }
   }
 
