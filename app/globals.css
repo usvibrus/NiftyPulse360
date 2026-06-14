@@ -8,14 +8,14 @@
   --color-border: #E0E0E0;
   --color-text: #1A1A1A;
   --color-text-secondary: #666666;
-  --color-green: #1B8C1B;
-  --color-red: #D32F2F;
+  --color-green: #167516;
+  --color-red: #B71C1C;
   --color-orange: #E65100;
   --color-footer: #1A1A2E;
 }
 
 body {
-  font-family: 'Noto Sans', 'Roboto', sans-serif;
+  font-family: var(--font-noto-sans), 'Noto Sans', sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
   font-size: 14px;
@@ -23,7 +23,7 @@ body {
 }
 
 .font-mono-price {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--font-roboto-mono), 'Roboto Mono', monospace;
   font-weight: 500;
 }
 
@@ -68,7 +68,7 @@ body {
   align-items: center;
   height: 100%;
   color: white;
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--font-roboto-mono), 'Roboto Mono', monospace;
   font-size: 13px;
 }
 .ticker-content:hover { animation-play-state: paused; }

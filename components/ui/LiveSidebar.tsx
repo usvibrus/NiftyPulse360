@@ -32,7 +32,7 @@ export default function LiveSidebar() {
     <>
       {/* Market Snapshot Widget */}
       <div className="section-header"><span>Market Snapshot</span></div>
-      <div className="bg-white border border-t-0 border-[#E0E0E0]">
+      <div className="bg-white border border-t-0 border-[#E0E0E0] min-h-[120px]">
         {indices.length > 0 ? indices.map(i => (
           <div key={i.symbol} className="flex justify-between items-center p-3 border-b border-[#E0E0E0] last:border-b-0">
             <span className="font-semibold text-sm">{INDEX_LABELS[i.symbol]}</span>

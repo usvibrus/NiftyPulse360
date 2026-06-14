@@ -29,7 +29,7 @@ export default async function HomePage() {
           <div className="mb-4">
             <div className="section-header">
               <span>📈 Today&apos;s Top Movers</span>
-              <Link href="/stocks" className="text-xs font-normal opacity-80 hover:opacity-100">View All →</Link>
+              <Link href="/stocks" className="text-xs font-normal text-white/90 hover:text-white underline">View All →</Link>
             </div>
             <div className="bg-white border border-t-0 border-[#E0E0E0]">
               <table className="w-full text-sm">
@@ -44,8 +44,8 @@ export default async function HomePage() {
                 <tbody>
                   {gainers.slice(0, 5).map(s => (
                     <tr key={s.slug} className="border-t border-[#E0E0E0] hover:bg-[#F5F7FA]">
-                      <td className="p-2 pl-4">
-                        <Link href={`/stocks/${s.slug}`} className="font-semibold text-[#1A1A1A] hover:text-[#1565C0]">{s.companyName}</Link>
+                      <td className="p-2 pl-4 py-3">
+                        <Link href={`/stocks/${s.slug}`} className="font-semibold text-[#1A1A1A] hover:text-[#1565C0] inline-block min-h-[24px]">{s.companyName}</Link>
                         <div className="text-xs text-[#666]">{s.symbol}</div>
                       </td>
                       <td className="text-right p-2 font-mono-price">₹{s.closePrice.toFixed(2)}</td>
@@ -55,8 +55,8 @@ export default async function HomePage() {
                   ))}
                   {losers.slice(0, 5).map(s => (
                     <tr key={s.slug} className="border-t border-[#E0E0E0] hover:bg-[#F5F7FA]">
-                      <td className="p-2 pl-4">
-                        <Link href={`/stocks/${s.slug}`} className="font-semibold text-[#1A1A1A] hover:text-[#1565C0]">{s.companyName}</Link>
+                      <td className="p-2 pl-4 py-3">
+                        <Link href={`/stocks/${s.slug}`} className="font-semibold text-[#1A1A1A] hover:text-[#1565C0] inline-block min-h-[24px]">{s.companyName}</Link>
                         <div className="text-xs text-[#666]">{s.symbol}</div>
                       </td>
                       <td className="text-right p-2 font-mono-price">₹{s.closePrice.toFixed(2)}</td>

@@ -25,6 +25,14 @@
     "slugify": "^1.6.9",
     "xml2js": "^0.6.2"
   },
+  "browserslist": [
+    "chrome >= 92",
+    "edge >= 92",
+    "firefox >= 91",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
+    "samsung >= 16"
+  ],
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

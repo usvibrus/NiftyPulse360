@@ -9,10 +9,10 @@ export default function Footer() {
             <h3 className="text-white font-bold text-lg mb-3">NiftyPulse<span className="text-[#4FC3F7]">360</span></h3>
             <p className="text-xs text-gray-400 leading-relaxed mb-3">India&apos;s real-time market intelligence platform. Daily Indian stock market analysis, news and explanations published by the Markets Desk after every trading session.</p>
             <p className="text-xs text-gray-400 leading-relaxed">
-              <strong className="text-gray-300">Data sources:</strong> NSE, BSE, RBI, Reuters, PTI, Moneycontrol, Economic Times. Full list at <Link href="/data-sources" className="text-[#4FC3F7] hover:text-white">Data Sources</Link>.
+              <strong className="text-gray-300">Data sources:</strong> NSE, BSE, RBI, Reuters, PTI, Moneycontrol, Economic Times. Full list at <Link href="/data-sources" className="text-[#4FC3F7] hover:text-white underline">Data Sources</Link>.
             </p>
             <div className="mt-4 flex gap-3">
-              <a href="https://x.com/bhamre61968" rel="noopener noreferrer" target="_blank" aria-label="NiftyPulse360 on X" className="text-gray-400 hover:text-white text-xs">X.com</a>
+              <a href="https://x.com/bhamre61968" rel="noopener noreferrer" target="_blank" aria-label="X.com" className="text-gray-400 hover:text-white text-xs">X.com</a>
               <a href="https://www.linkedin.com/in/ankit-bhamre-a82b58343/" rel="noopener noreferrer" target="_blank" aria-label="NiftyPulse360 on LinkedIn" className="text-gray-400 hover:text-white text-xs">LinkedIn</a>
               <Link href="/feed.xml" className="text-gray-400 hover:text-white text-xs">RSS</Link>
             </div>

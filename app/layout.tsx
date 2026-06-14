@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Noto_Sans, Roboto_Mono } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
-const inter = Inter({ subsets: ['latin'] })
+const notoSans = Noto_Sans({ subsets: ['latin'], weight: ['400', '600', '700'], display: 'swap', variable: '--font-noto-sans' })
+const robotoMono = Roboto_Mono({ subsets: ['latin'], weight: ['500'], display: 'swap', variable: '--font-roboto-mono' })
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
 
@@ -105,9 +106,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
         <meta name="google-site-verification" content="Gp64e-hXtGzB7HQOV5DwUQSio69pEJ2c8d_vKjXGdNM" />
         <meta name="p:domain_verify" content="3a2c36fc6bc5f657ec631850fef56b4d" />
         <meta name="googlebot-news" content="index, follow" />
@@ -124,7 +124,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         )}
       </head>
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
+      <body className={`${notoSans.variable} ${robotoMono.variable} bg-gray-50 text-gray-900`}>
         <Header />
         <main className="min-h-screen">{children}</main>
         <Footer />
