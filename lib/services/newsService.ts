@@ -109,7 +109,7 @@ async function fetchMarketaux(symbol: string): Promise<NewsItem[]> {
       limit: '5',
     })
     const res = await fetch(`https://api.marketaux.com/v1/news/all?${params}`, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     })
     if (!res.ok) return []
     const json = await res.json()

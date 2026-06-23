@@ -41,6 +41,24 @@ export interface RapidApiMetals {
   fetchedAt: Date
 }
 
+async function attemptFetch(url: string, key: string): Promise<RapidApiMetalsResponse | null> {
+  const res = await fetch(url, {
+    headers: {
+      'x-rapidapi-host': HOST,
+      'x-rapidapi-key': key,
+      'Content-Type': 'application/json',
+    },
+    signal: AbortSignal.timeout(12000),
+  })
+
+  if (!res.ok) {
+    console.warn(`[rapidapi-metals] HTTP ${res.status}`)
+    return null
+  }
+
+  return res.json() as Promise<RapidApiMetalsResponse>
+}
+
 export async function fetchRapidApiMetals(): Promise<RapidApiMetals | null> {
   const key = process.env.RAPIDAPI_KEY
   if (!key) return null
@@ -48,51 +66,42 @@ export async function fetchRapidApiMetals(): Promise<RapidApiMetals | null> {
   const city = process.env.RAPIDAPI_METALS_CITY || 'mumbai'
   const url = `https://${HOST}/api/Fetch-Gold-Silver/?city=${encodeURIComponent(city)}`
 
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'x-rapidapi-host': HOST,
-        'x-rapidapi-key': key,
-        'Content-Type': 'application/json',
-      },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!res.ok) {
-      console.warn(`[rapidapi-metals] HTTP ${res.status}`)
-      return null
+  let data: RapidApiMetalsResponse | null = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      data = await attemptFetch(url, key)
+      if (data?.success && data.data) break
+      data = null
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.warn(`[rapidapi-metals] attempt ${attempt + 1} failed: ${msg}`)
+      data = null
     }
+    if (attempt === 0) await new Promise(r => setTimeout(r, 3000))
+  }
 
-    const data = await res.json() as RapidApiMetalsResponse
-
-    if (!data?.success || !data.data) {
-      console.warn('[rapidapi-metals] success=false or no data')
-      return null
-    }
-
-    const gold24k = data.data.gold?.['24k']?.['1gram']
-    const gold22k = data.data.gold?.['22k']?.['1gram']
-    const silver = data.data.silver?.['1gram']
-
-    // Sanity bounds — rejects garbage values
-    const validGold = (n: unknown): n is number => typeof n === 'number' && n > 1000 && n < 100000
-    const validSilver = (n: unknown): n is number => typeof n === 'number' && n > 50 && n < 10000
-
-    if (!validGold(gold24k) || !validGold(gold22k) || !validSilver(silver)) {
-      console.warn(`[rapidapi-metals] invalid values: gold24k=${gold24k}, gold22k=${gold22k}, silver=${silver}`)
-      return null
-    }
-
-    return {
-      gold24k,
-      gold22k,
-      silver,
-      city,
-      fetchedAt: new Date(),
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.warn('[rapidapi-metals] fetch failed:', msg)
+  if (!data?.success || !data.data) {
+    console.warn('[rapidapi-metals] all attempts failed or success=false')
     return null
+  }
+
+  const gold24k = data.data.gold?.['24k']?.['1gram']
+  const gold22k = data.data.gold?.['22k']?.['1gram']
+  const silver = data.data.silver?.['1gram']
+
+  const validGold = (n: unknown): n is number => typeof n === 'number' && n > 1000 && n < 100000
+  const validSilver = (n: unknown): n is number => typeof n === 'number' && n > 50 && n < 10000
+
+  if (!validGold(gold24k) || !validGold(gold22k) || !validSilver(silver)) {
+    console.warn(`[rapidapi-metals] invalid values: gold24k=${gold24k}, gold22k=${gold22k}, silver=${silver}`)
+    return null
+  }
+
+  return {
+    gold24k,
+    gold22k,
+    silver,
+    city,
+    fetchedAt: new Date(),
   }
 }

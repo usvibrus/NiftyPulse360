@@ -13,7 +13,9 @@ export async function postToDevTo() {
     orderBy: { publishedAt: 'desc' },
   })
 
-  for (const s of stocks) {
+  for (let i = 0; i < stocks.length; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 35000))
+    const s = stocks[i]
     const verb = s.eventType === 'RISE' ? 'surged' : 'dropped'
     const emoji = s.eventType === 'RISE' ? '📈' : '📉'
     const direction = s.eventType === 'RISE' ? 'up' : 'down'

@@ -1,17 +1,14 @@
 /**
  * Lightweight Yahoo Finance REST client — replaces the yahoo-finance2 SDK.
  *
- * The SDK adds ~50-80 MB to process memory because it caches modules, maintains
- * a tough-cookie jar, and bundles dozens of unused sub-modules. This file does
- * the same two things we actually use (quote, quoteSummary) via direct HTTP
- * calls to Yahoo's public v6/v10 API. No cookies, no module-scope state, no
- * memory growth.
+ * Uses the v8 chart API (the v6/quote endpoint was killed mid-2025).
+ * No cookies, no module-scope state, no memory growth.
  */
 
 const YF_BASE = 'https://query2.finance.yahoo.com'
 
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
   'Accept': 'application/json',
 }
 
@@ -34,11 +31,47 @@ interface YFClient {
 export async function getYahooFinance(): Promise<YFClient> {
   return {
     async quote(symbol: string): Promise<unknown> {
-      const data = await yfFetch(`/v6/finance/quote?symbols=${encodeURIComponent(symbol)}`) as {
-        quoteResponse?: { result?: unknown[] }
+      const data = await yfFetch(
+        `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d&includePrePost=false`
+      ) as {
+        chart?: { result?: Array<{
+          meta?: {
+            regularMarketPrice?: number
+            previousClose?: number
+            chartPreviousClose?: number
+            [key: string]: unknown
+          }
+          indicators?: {
+            quote?: Array<{
+              open?: (number | null)[]
+              high?: (number | null)[]
+              low?: (number | null)[]
+              close?: (number | null)[]
+            }>
+          }
+        }> }
       }
-      const result = data?.quoteResponse?.result?.[0]
-      return result || null
+
+      const result = data?.chart?.result?.[0]
+      if (!result?.meta) return null
+
+      const meta = result.meta
+      const quotes = result.indicators?.quote?.[0]
+      const lastIdx = quotes?.close ? quotes.close.length - 1 : -1
+
+      const price = meta.regularMarketPrice ?? 0
+      const prevClose = meta.previousClose ?? meta.chartPreviousClose ?? 0
+      const change = price - prevClose
+      const changePct = prevClose ? (change / prevClose) * 100 : 0
+
+      return {
+        regularMarketPrice: price,
+        regularMarketChange: change,
+        regularMarketChangePercent: changePct,
+        regularMarketOpen: (lastIdx >= 0 ? quotes?.open?.[lastIdx] : null) ?? price,
+        regularMarketDayHigh: (lastIdx >= 0 ? quotes?.high?.[lastIdx] : null) ?? price,
+        regularMarketDayLow: (lastIdx >= 0 ? quotes?.low?.[lastIdx] : null) ?? price,
+      }
     },
 
     async quoteSummary(symbol: string, opts: { modules: string[] }): Promise<unknown> {
