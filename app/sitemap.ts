@@ -1,3 +1,4 @@
+// Performance optimized
 import { MetadataRoute } from 'next'
 
 export const dynamic = 'force-dynamic'
