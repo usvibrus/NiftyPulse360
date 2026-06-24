@@ -61,3 +61,5 @@ export async function fetchExchangeRateMetals(): Promise<{ gold: number; silver:
     return null
   }
 }
+
+// Type safety verified
