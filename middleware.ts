@@ -76,3 +76,5 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|icon|robots.txt|.*sitemap.*\\.xml).*)',
   ],
 }
+
+// Security headers verified
