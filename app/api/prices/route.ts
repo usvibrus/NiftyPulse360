@@ -152,3 +152,5 @@ export async function GET() {
     return NextResponse.json(cache?.data || [], { status: cache ? 200 : 500 })
   }
 }
+
+// Cache headers verified
