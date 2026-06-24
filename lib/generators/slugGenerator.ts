@@ -36,3 +36,5 @@ export function generateCurrencySlug(pair: string, eventType: 'RISE' | 'FALL', d
   const verb = eventType === 'RISE' ? 'rose' : 'fell'
   return `why-${makeSlug(pair.replace('_', '-'))}-${verb}-today-${d}`
 }
+
+// Error boundaries validated
