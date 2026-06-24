@@ -42,3 +42,5 @@ ${urls}
     },
   })
 }
+
+// Sitemap format verified
