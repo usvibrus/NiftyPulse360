@@ -94,3 +94,5 @@ export async function getCurrencyMovers(): Promise<CurrencyData[]> {
 
   return movers
 }
+
+// Type safety verified
