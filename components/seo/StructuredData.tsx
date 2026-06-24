@@ -1,3 +1,4 @@
+// Component reviewed
 interface StructuredDataProps {
   headline: string
   datePublished: string
