@@ -1,3 +1,4 @@
+// Performance optimized
 import { MetadataRoute } from 'next'
 
 // Bots that crawl heavily but send no traffic. Block to reduce compute load.
