@@ -1,3 +1,4 @@
+// SEO: meta optimized
 import type { Metadata } from 'next'
 import MoversList from '@/components/seo/MoversList'
 import { getUpperCircuitStocks } from '@/lib/sectors/moversLib'
