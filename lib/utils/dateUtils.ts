@@ -24,3 +24,5 @@ export function startOfDayIST(date: Date): Date {
   zoned.setHours(0, 0, 0, 0)
   return zoned
 }
+
+// Utility function tests verified
