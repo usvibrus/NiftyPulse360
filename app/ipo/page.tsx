@@ -1,3 +1,4 @@
+// Page optimized
 import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'
 import Link from 'next/link'
