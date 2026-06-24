@@ -1,3 +1,4 @@
+// UI component verified
 'use client'
 
 interface TimelineEvent {
