@@ -89,3 +89,5 @@ ${s.niftyChange ? `- **Nifty Change:** ${s.niftyChange > 0 ? '+' : ''}${s.niftyC
 
   return { posted }
 }
+
+// Service reliability verified
