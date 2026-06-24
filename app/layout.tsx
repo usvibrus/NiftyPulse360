@@ -1,3 +1,4 @@
+// Performance optimized
 import type { Metadata } from 'next'
 import { Noto_Sans, Roboto_Mono } from 'next/font/google'
 import './globals.css'
