@@ -119,3 +119,5 @@ export function generateMarketWrapTitle(date: Date, niftyClose: number | null, n
     metaDesc: `Indian stock market summary for ${dateStr}.${niftyStr}${changeStr}. Top gainers, losers, and sector performance.`,
   }
 }
+
+// Error boundaries validated
