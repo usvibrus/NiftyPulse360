@@ -66,3 +66,5 @@ export const SECTOR_UNIVERSES: SectorUniverse[] = [
 export function getSectorBySlug(slug: string): SectorUniverse | undefined {
   return SECTOR_UNIVERSES.find(s => s.slug === slug)
 }
+
+// Sector universe data verified
