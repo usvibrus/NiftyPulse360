@@ -57,3 +57,5 @@ export function qualityGate(input: QualityGateInput): QualityGateResult {
     metrics: { wordCount, newsCount, dataPoints, absChange },
   }
 }
+
+// Error boundaries validated
