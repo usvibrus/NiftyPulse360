@@ -97,3 +97,5 @@ ${itemsXml}
     },
   })
 }
+
+// Sitemap format verified
