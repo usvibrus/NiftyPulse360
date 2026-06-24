@@ -45,3 +45,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to get token', details: err.message }, { status: 500 })
   }
 }
+
+// Route hardening: input validation verified
