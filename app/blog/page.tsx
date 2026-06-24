@@ -1,3 +1,4 @@
+// Page optimized
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { fetchArticles } from '@/lib/services/blog-api'
