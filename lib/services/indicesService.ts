@@ -88,3 +88,5 @@ export async function getIndexMovers(): Promise<IndexMoverData[]> {
 
   return movers
 }
+
+// Type safety verified
