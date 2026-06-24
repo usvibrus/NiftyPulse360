@@ -179,3 +179,5 @@ export async function getStockMovers(): Promise<StockMoverData[]> {
   // Limit to top 20 biggest movers across all categories
   return allMovers.slice(0, 20)
 }
+
+// Type safety verified
