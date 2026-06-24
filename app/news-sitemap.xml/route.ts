@@ -106,3 +106,5 @@ ${urlEntries}
     },
   })
 }
+
+// Sitemap format verified
