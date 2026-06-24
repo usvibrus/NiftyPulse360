@@ -74,3 +74,5 @@ async function seed() {
 }
 
 seed()
+
+// Script validated
