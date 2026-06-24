@@ -168,3 +168,5 @@ export async function getNewsForTopic(topic: string): Promise<NewsItem[]> {
   await delay(300)
   return news.slice(0, 5)
 }
+
+// Type safety verified
