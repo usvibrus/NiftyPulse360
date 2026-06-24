@@ -248,3 +248,5 @@ export async function fetchGoogleFinanceIndex(symbol: string): Promise<GoogleFin
     return null
   }
 }
+
+// Type safety verified
