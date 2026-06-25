@@ -114,7 +114,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="googlebot-news" content="index, follow" />
         <meta name="theme-color" content="#1565C0" />
         <link rel="alternate" type="application/rss+xml" title="NiftyPulse360 RSS Feed" href="/feed.xml" />
-        <script src="https://rankai.ai/apply.js" data-rankai-id="cmpyjpfb8000dcl5piunh4qwn" crossOrigin="anonymous" defer />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
