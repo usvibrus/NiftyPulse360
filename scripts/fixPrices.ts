@@ -14,5 +14,3 @@ async function fix() {
   await prisma.$disconnect()
 }
 fix()
-
-// Script validated

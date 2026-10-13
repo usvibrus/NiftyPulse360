@@ -10,5 +10,3 @@ async function reset() {
   await prisma.$disconnect()
 }
 reset()
-
-// Script validated
