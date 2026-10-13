@@ -20,7 +20,8 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // X-XSS-Protection intentionally omitted: modern browsers removed the XSS auditor
+          // and OWASP advises against "1; mode=block", which could itself leak data.
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
