@@ -53,15 +53,17 @@ const MIDCAP_STOCKS = [
 
 // Small-cap: Popular traded small-caps — high volatility, big % moves daily
 const SMALLCAP_STOCKS = [
-  'YESBANK', 'IDEA', 'SUZLON', 'IRFC', 'NHPC',
+  // NHPC lives in MIDCAP only; MAZDOCK (below) is Mazagon Dock's real NSE symbol;
+  // Amara Raja trades as ARE&M since its 2023 rename.
+  'YESBANK', 'IDEA', 'SUZLON', 'IRFC',
   'RBLBANK', 'IBREALEST', 'INFIBEAM', 'DELTACORP', 'NETWORK18',
   'TV18BRDCST', 'TATACHEM', 'CHAMBLFERT', 'GNFC', 'GSFC',
   'ORIENTELEC', 'APLAPOLLO', 'FINEORG', 'CLEAN', 'KPITTECH',
   'TATAELXSI', 'HAPPSTMNDS', 'ROUTE', 'CDSL', 'ANGELONE',
   'RAILTEL', 'RVNL', 'IRCON', 'BEL', 'HAL',
-  'COCHINSHIP', 'MAZAGON', 'GRINDWELL', 'TIINDIA', 'CERA',
+  'COCHINSHIP', 'GRINDWELL', 'TIINDIA', 'CERA',
   'KAJARIACER', 'BLUESTARCO', 'DIXON', 'KAYNES', 'OLECTRA',
-  'EXIDEIND', 'AMARAJABAT', 'JBCHEPHARM', 'SOLARINDS', 'NIACL',
+  'EXIDEIND', 'ARE&M', 'JBCHEPHARM', 'SOLARINDS', 'NIACL',
   'HFCL', 'TANLA', 'TEJASNET', 'ZENTEC', 'MAZDOCK',
 ]
 
@@ -86,8 +88,8 @@ const SECTOR_MAP: Record<string, string> = {
   RBLBANK: 'Banking', IBREALEST: 'Realty', DELTACORP: 'Gaming', TATACHEM: 'Chemicals',
   KPITTECH: 'IT', TATAELXSI: 'IT', HAPPSTMNDS: 'IT', CDSL: 'Finance', ANGELONE: 'Finance',
   RAILTEL: 'Railways', RVNL: 'Railways', IRCON: 'Railways', BEL: 'Defence', HAL: 'Defence',
-  COCHINSHIP: 'Defence', MAZAGON: 'Defence', DIXON: 'Electronics', KAYNES: 'Electronics', OLECTRA: 'EV',
-  EXIDEIND: 'Auto', AMARAJABAT: 'Auto', HFCL: 'Telecom', TANLA: 'IT', MAZDOCK: 'Defence',
+  COCHINSHIP: 'Defence', DIXON: 'Electronics', KAYNES: 'Electronics', OLECTRA: 'EV',
+  EXIDEIND: 'Auto', 'ARE&M': 'Auto', HFCL: 'Telecom', TANLA: 'IT', MAZDOCK: 'Defence',
   RECLTD: 'Power', PFC: 'Power', TORNTPOWER: 'Power', SJVN: 'Power', PETRONET: 'Energy', IGL: 'Energy',
 }
 
