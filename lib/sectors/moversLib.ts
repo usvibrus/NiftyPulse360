@@ -7,7 +7,7 @@
  */
 
 import { fetchGoogleFinanceStock, GoogleFinanceStock } from '@/lib/services/googleFinanceService'
-import { SECTOR_UNIVERSES, getSectorBySlug } from '@/lib/sectors/sectorUniverse'
+import { getSectorBySlug } from '@/lib/sectors/sectorUniverse'
 
 const CACHE_TTL_MS = 30 * 60 * 1000 // 30 min — fresher data, less memory pressure
 const MAX_CACHE_KEYS = 10           // hard cap. Currently we use 6 keys, so this is headroom
@@ -34,11 +34,23 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function fetchUniverse(symbols: string[], cacheKey: string): Promise<GoogleFinanceStock[]> {
-  const now = Date.now()
-  const hit = cache.get(cacheKey)
-  if (hit && now - hit.ts < CACHE_TTL_MS) return hit.data
+// Scrapes in progress, keyed like the cache. Concurrent requests for the same listing
+// page share one crawl instead of each starting its own 60+ page scrape (memory spikes).
+const inflight = new Map<string, Promise<GoogleFinanceStock[]>>()
 
+async function fetchUniverse(symbols: string[], cacheKey: string): Promise<GoogleFinanceStock[]> {
+  const hit = cache.get(cacheKey)
+  if (hit && Date.now() - hit.ts < CACHE_TTL_MS) return hit.data
+
+  const pending = inflight.get(cacheKey)
+  if (pending) return pending
+
+  const scrape = scrapeUniverse(symbols, cacheKey).finally(() => inflight.delete(cacheKey))
+  inflight.set(cacheKey, scrape)
+  return scrape
+}
+
+async function scrapeUniverse(symbols: string[], cacheKey: string): Promise<GoogleFinanceStock[]> {
   const results: GoogleFinanceStock[] = []
   for (const sym of symbols) {
     try {
@@ -57,7 +69,7 @@ async function fetchUniverse(symbols: string[], cacheKey: string): Promise<Googl
     cache.delete(oldestKey)
   }
 
-  cache.set(cacheKey, { data: results, ts: now })
+  cache.set(cacheKey, { data: results, ts: Date.now() })
   return results
 }
 
@@ -70,7 +82,8 @@ export async function getSectorMovers(sectorSlug: string): Promise<MoversResult>
   const sector = getSectorBySlug(sectorSlug)
   if (!sector) return { stocks: [], fetchedAt: new Date() }
 
-  const stocks = await fetchUniverse(sector.symbols, `sector:${sectorSlug}`)
+  // Copy before sorting: the cached array is shared with other requests
+  const stocks = [...(await fetchUniverse(sector.symbols, `sector:${sectorSlug}`))]
   // Sort by absolute % change so biggest movers (up or down) come first
   stocks.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
   return { stocks, fetchedAt: new Date() }
