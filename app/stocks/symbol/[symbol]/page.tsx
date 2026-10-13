@@ -1,4 +1,3 @@
-// Symbol lookup optimized
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'
