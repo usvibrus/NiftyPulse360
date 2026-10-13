@@ -60,7 +60,11 @@ export async function getYahooFinance(): Promise<YFClient> {
       const lastIdx = quotes?.close ? quotes.close.length - 1 : -1
 
       const price = meta.regularMarketPrice ?? 0
-      const prevClose = meta.previousClose ?? meta.chartPreviousClose ?? 0
+      // With range=2d, chartPreviousClose is the close *before* the first bar (two sessions
+      // back), so fall back to the previous daily bar's close to get today's change.
+      const closes = quotes?.close ?? []
+      const prevBarClose = closes.length >= 2 ? closes[closes.length - 2] : null
+      const prevClose = meta.previousClose ?? prevBarClose ?? meta.chartPreviousClose ?? 0
       const change = price - prevClose
       const changePct = prevClose ? (change / prevClose) * 100 : 0
 
