@@ -20,13 +20,14 @@ export default function ArticleLoading() {
 
       {/* Content skeleton */}
       <div className="space-y-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="blog-skeleton h-4 rounded" style={{ width: `${85 + Math.random() * 15}%` }} />
+        {/* Fixed widths: Math.random() during render is impure and changes on every render */}
+        {[92, 88, 97, 86, 95, 90, 99, 87].map((width, i) => (
+          <div key={i} className="blog-skeleton h-4 rounded" style={{ width: `${width}%` }} />
         ))}
         <div className="blog-skeleton h-4 w-1/2 rounded" />
         <div className="my-6" />
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="blog-skeleton h-4 rounded" style={{ width: `${80 + Math.random() * 20}%` }} />
+        {[84, 96, 81, 93, 88, 98].map((width, i) => (
+          <div key={i} className="blog-skeleton h-4 rounded" style={{ width: `${width}%` }} />
         ))}
       </div>
     </div>

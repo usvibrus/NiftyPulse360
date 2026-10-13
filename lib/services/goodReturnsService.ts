@@ -34,7 +34,8 @@ export async function fetchGoodReturnsMetals(): Promise<GoodReturnsMetals | null
 
     // Silver: intro text has "₹285 per gram"
     let silver = 0
-    let silverChange = 0
+    // The silver page's change value isn't parsed yet, so it is always reported as 0
+    const silverChange = 0
     if (silverHtml) {
       const silverMatch = silverHtml.match(/(?:₹|&#8377;|&#x20b9;)\s*([\d,]+)\s*(?:<\/strong>)?\s*per\s*gram/i)
       silver = silverMatch ? parseInt(silverMatch[1].replace(/,/g, ''), 10) : 0
