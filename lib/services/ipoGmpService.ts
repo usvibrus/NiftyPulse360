@@ -108,14 +108,34 @@ async function scrapeGmpFallback(): Promise<GmpScrapedEntry[]> {
   return entries
 }
 
+// Normalise names for matching: drop corporate suffixes as whole words only (so
+// "Technocraft" keeps its name), strip punctuation and collapse whitespace.
+function normalizeIpoName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\b(limited|ltd|pvt|private|industries|technologies|ipo|sme)\b/g, ' ')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function matchGmpToIpo(gmpEntries: GmpScrapedEntry[], ipoName: string): GmpScrapedEntry | null {
-  const normalizedIpo = ipoName.toLowerCase().replace(/limited|ltd|pvt|private|industries|technologies/gi, '').trim()
-  const firstWord = normalizedIpo.split(/\s+/)[0]
+  const normalizedIpo = normalizeIpoName(ipoName)
+  if (normalizedIpo.length < 3) return null
+  const [ipoFirst, ipoSecond] = normalizedIpo.split(' ')
 
   for (const entry of gmpEntries) {
-    const normalizedEntry = entry.companyName.toLowerCase().replace(/limited|ltd|pvt|private|industries|technologies/gi, '').trim()
-    if (normalizedEntry.includes(normalizedIpo) || normalizedIpo.includes(normalizedEntry)) return entry
-    if (normalizedEntry.startsWith(firstWord) && firstWord.length >= 4) return entry
+    const normalizedEntry = normalizeIpoName(entry.companyName)
+    // A blank/very short name would "match" every IPO via includes('')
+    if (normalizedEntry.length < 3) continue
+    if (
+      normalizedEntry === normalizedIpo ||
+      normalizedEntry.startsWith(`${normalizedIpo} `) ||
+      normalizedIpo.startsWith(`${normalizedEntry} `)
+    ) return entry
+    // First two words must agree; a single shared first word ("Shree ...") is too loose
+    const [entryFirst, entrySecond] = normalizedEntry.split(' ')
+    if (ipoSecond && entrySecond && ipoFirst === entryFirst && ipoSecond === entrySecond) return entry
   }
 
   return null
