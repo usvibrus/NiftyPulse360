@@ -85,10 +85,18 @@ function parseJsonResponse(text: string): AnalysisResult | null {
       .replace(/\s*```$/i, '')
       .trim()
     const parsed = JSON.parse(cleaned)
-    if (parsed.analysis && Array.isArray(parsed.faq) && parsed.faq.length > 0) {
-      return { analysis: parsed.analysis, faq: parsed.faq.slice(0, 3) }
+    // Models occasionally return the wrong shape (analysis as an array, FAQ items missing
+    // fields). Only accept well-formed output so the caller can fall back cleanly.
+    if (typeof parsed?.analysis !== 'string' || !parsed.analysis.trim() || !Array.isArray(parsed.faq)) {
+      return null
     }
-    return null
+    const faq = parsed.faq.filter(
+      (f: unknown): f is { question: string; answer: string } =>
+        typeof (f as { question?: unknown })?.question === 'string' &&
+        typeof (f as { answer?: unknown })?.answer === 'string'
+    )
+    if (faq.length === 0) return null
+    return { analysis: parsed.analysis, faq: faq.slice(0, 3) }
   } catch {
     return null
   }
