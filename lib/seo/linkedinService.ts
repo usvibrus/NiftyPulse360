@@ -91,9 +91,10 @@ export async function postToLinkedIn() {
       // Try uploading image for a rich post
       const imageAsset = await uploadImageToLinkedIn(accessToken, personUrn, imageUrl)
 
+      let postRes: Response
       if (imageAsset) {
         // Post with full-width image
-        await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        postRes = await fetch('https://api.linkedin.com/v2/ugcPosts', {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -110,7 +111,7 @@ export async function postToLinkedIn() {
         })
       } else {
         // Fallback: post as article link (still shows OG image as preview card)
-        await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        postRes = await fetch('https://api.linkedin.com/v2/ugcPosts', {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -125,6 +126,11 @@ export async function postToLinkedIn() {
           }),
           signal: AbortSignal.timeout(15000),
         })
+      }
+
+      // Only mark as posted once LinkedIn accepted the post, so 401/422/429 get retried
+      if (!postRes.ok) {
+        throw new Error(`ugcPosts HTTP ${postRes.status}: ${(await postRes.text()).slice(0, 200)}`)
       }
 
       await prisma.stockEvent.update({ where: { id: s.id }, data: { tweetPosted: true } })
