@@ -242,7 +242,8 @@ export function generateIpoTitle(companyName: string, status: string, gmpValue?:
 export function generateIpoListingTitle(companyName: string, gainLoss: number): { metaTitle: string; metaDesc: string } {
   const shortName = companyName.replace(/\s*(Limited|Ltd\.?|Pvt\.?|Private|Industries)\s*/gi, '').trim()
   const year = new Date().getFullYear()
-  const verb = gainLoss >= 0 ? `+${gainLoss.toFixed(0)}% Premium` : `${gainLoss.toFixed(0)}% Discount`
+  // gainLoss is signed; "-12% Discount" reads as a double negative
+  const verb = gainLoss >= 0 ? `+${gainLoss.toFixed(0)}% Premium` : `${Math.abs(gainLoss).toFixed(0)}% Discount`
 
   return {
     metaTitle: `${shortName} IPO Listed at ${verb} — Listing Price & Result ${year}`,
@@ -257,7 +258,7 @@ export function generateIpoFaq(ipo: IpoPageData): { question: string; answer: st
   faq.push({
     question: `What is ${name} IPO GMP today?`,
     answer: ipo.gmpValue !== null
-      ? `The current Grey Market Premium (GMP) for ${name} IPO is ₹${ipo.gmpValue}${ipo.priceBandMax ? `, indicating an expected listing price of ₹${(ipo.priceBandMax + ipo.gmpValue).toFixed(0)}` : ''}.`
+      ? `The current Grey Market Premium (GMP) for ${name} IPO is ${ipo.gmpValue >= 0 ? '+' : '-'}₹${Math.abs(ipo.gmpValue)}${ipo.priceBandMax ? `, indicating an expected listing price of ₹${(ipo.priceBandMax + ipo.gmpValue).toFixed(0)}` : ''}.`
       : `GMP data for ${name} IPO is not yet available. GMP typically starts appearing 1-2 days before the IPO opens.`,
   })
 
