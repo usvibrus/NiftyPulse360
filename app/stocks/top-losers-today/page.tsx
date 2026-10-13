@@ -1,4 +1,3 @@
-// SEO: meta optimized
 import Link from 'next/link'
 import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'

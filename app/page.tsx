@@ -1,4 +1,3 @@
-// Performance optimized
 import Link from 'next/link'
 import { prisma } from '@/lib/db/prisma'
 import { format } from 'date-fns'
