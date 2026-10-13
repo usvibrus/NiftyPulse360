@@ -6,7 +6,9 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-IN').format(value)
 }
 
-export function formatPercent(value: number): string {
+export function formatPercent(value: number | null | undefined): string {
+  // Avoid "NaN%" / a TypeError on null when upstream data is missing
+  if (value == null || !Number.isFinite(value)) return '—'
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }
 
