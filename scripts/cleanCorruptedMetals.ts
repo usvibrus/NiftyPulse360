@@ -53,5 +53,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-
-// Script validated
