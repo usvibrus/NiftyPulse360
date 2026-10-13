@@ -140,14 +140,14 @@ export function generateMetalContent(metal: MetalData, news: NewsItem[], date: D
 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 <div><span class="text-sm text-gray-500">Per Gram (${metal.carat || 'Pure'})</span><p class="font-bold">${formatINR(metal.pricePerGram)}</p></div>
 <div><span class="text-sm text-gray-500">Per Tola</span><p class="font-bold">${formatINR(metal.pricePerTola)}</p></div>
-<div><span class="text-sm text-gray-500">Per Ounce (USD)</span><p class="font-bold">$${metal.pricePerOunce.toFixed(2)}</p></div>
+<div><span class="text-sm text-gray-500">Per Troy Ounce</span><p class="font-bold">${formatINR(metal.pricePerOunce)}</p></div>
 <div><span class="text-sm text-gray-500">Change</span><p class="font-bold ${metal.eventType === 'RISE' ? 'text-green-600' : 'text-red-600'}">${formatPercent(metal.eventType === 'RISE' ? metal.changePercent : -metal.changePercent)}</p></div>
 </div>
 </section>
 
 <section class="why-move">
 <h2>Why Did ${metalName} Price ${metal.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
-<p>${metalName} prices in India ${verb} by ${metal.changePercent.toFixed(2)}% today, ${d}. The current price of ${metal.carat || 'pure'} ${metalName.toLowerCase()} is ${formatINR(metal.pricePerGram)} per gram and ${formatINR(metal.pricePerTola)} per tola (11.66 grams). In international markets, ${metalName.toLowerCase()} is trading at $${metal.pricePerOunce.toFixed(2)} per troy ounce.</p>
+<p>${metalName} prices in India ${verb} by ${metal.changePercent.toFixed(2)}% today, ${d}. The current price of ${metal.carat || 'pure'} ${metalName.toLowerCase()} is ${formatINR(metal.pricePerGram)} per gram and ${formatINR(metal.pricePerTola)} per tola (11.66 grams). That works out to ${formatINR(metal.pricePerOunce)} per troy ounce (31.1 grams).</p>
 <p>Key reasons behind today's ${metalName.toLowerCase()} price movement:</p>
 <ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || `<li>Global ${metalName.toLowerCase()} demand and supply dynamics</li><li>US Dollar movement and Federal Reserve policy expectations</li><li>Geopolitical tensions and safe-haven demand</li>`}</ul>
 <p>${metalName} prices in India are influenced by international prices, the USD/INR exchange rate, and domestic demand. ${metal.eventType === 'RISE' ? 'Rising prices suggest increased safe-haven demand or weakening of the US Dollar.' : 'Falling prices may indicate profit-booking or strengthening of the US Dollar.'} Investors should monitor global central bank policies and geopolitical developments for further direction.</p>
