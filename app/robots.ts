@@ -61,7 +61,7 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: 'Yandex', allow: '/', disallow: ['/api/', '/admin/'] },
       { userAgent: 'DuckDuckBot', allow: '/', disallow: ['/api/', '/admin/'] },
       { userAgent: 'Slurp', allow: '/', disallow: ['/api/', '/admin/'] }, // Yahoo
-      // Block useless bots that ignore robots is handled in middleware.ts
+      // Bots that ignore robots.txt are hard-blocked in proxy.ts
       ...blockedRules,
     ],
     sitemap: [
