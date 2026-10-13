@@ -161,15 +161,21 @@ export async function processIndexingQueue() {
     for (let i = 0; i < pending.length; i += 10) {
       const chunk = pending.slice(i, i + 10)
       const results = await Promise.all(chunk.map(item => pingGoogleIndexing(item.url)))
-      for (let j = 0; j < chunk.length; j++) {
-        const item = chunk[j]
-        const success = results[j]
-        await prisma.indexingQueue.update({
-          where: { id: item.id },
-          data: { attempts: { increment: 1 }, lastAttempt: new Date(), success },
-        })
-        if (success) googleSuccess++
-      }
+      // Two batched UPDATEs per chunk instead of one round-trip per URL (up to 200 per run)
+      const okIds = chunk.filter((_, j) => results[j]).map(item => item.id)
+      const failedIds = chunk.filter((_, j) => !results[j]).map(item => item.id)
+      const now = new Date()
+      await prisma.$transaction([
+        prisma.indexingQueue.updateMany({
+          where: { id: { in: okIds } },
+          data: { attempts: { increment: 1 }, lastAttempt: now, success: true },
+        }),
+        prisma.indexingQueue.updateMany({
+          where: { id: { in: failedIds } },
+          data: { attempts: { increment: 1 }, lastAttempt: now, success: false },
+        }),
+      ])
+      googleSuccess += okIds.length
     }
     return googleSuccess
   })()
