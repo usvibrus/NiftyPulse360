@@ -77,6 +77,8 @@ ${s.niftyChange ? `- **Nifty Change:** ${s.niftyChange > 0 ? '+' : ''}${s.niftyC
             series: 'Indian Stock Market Daily',
           },
         }),
+        // Without a timeout a hung dev.to request stalls the whole stocks cron run
+        signal: AbortSignal.timeout(15000),
       })
 
       if (!res.ok) throw new Error(`${res.status} ${await res.text()}`)
