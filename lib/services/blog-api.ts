@@ -61,7 +61,17 @@ export async function fetchArticles(
     }
 
     const json = await res.json()
-    return json as ArticlesResponse
+    // A 200 with an unexpected body (e.g. { success: false }) would otherwise crash /blog
+    // when the page calls articles.length / articles.map.
+    if (!json?.success || !Array.isArray(json.data)) {
+      console.error('[blog-api] fetchArticles: unexpected response shape')
+      return emptyResponse(page, limit)
+    }
+    return {
+      success: true,
+      data: json.data as BlogArticleSummary[],
+      pagination: json.pagination ?? { page, limit, total: json.data.length, totalPages: 1 },
+    }
   } catch (err) {
     console.error('[blog-api] fetchArticles error:', err)
     return emptyResponse(page, limit)
