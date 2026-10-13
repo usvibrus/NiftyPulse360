@@ -25,11 +25,16 @@ export async function fetchGoodReturnsMetals(): Promise<GoodReturnsMetals | null
     const goldMatch = goldHtml.match(/(?:₹|&#8377;|&#x20b9;)\s*([\d,]+)\s*(?:<\/strong>)?\s*per\s*gram\s*for\s*24/i)
     const gold24k = goldMatch ? parseInt(goldMatch[1].replace(/,/g, ''), 10) : 0
 
-    // Gold change: in table as <span class="gr-delta-up">(+32)</span> after ₹15,938
+    // Gold change: in table as <span class="gr-delta-up">(+32)</span> after the 24K price
+    // (e.g. ₹15,938). Anchor on the parsed price instead of a hardcoded "15,xxx" range,
+    // which silently reported 0 change whenever gold moved outside ₹15,000-15,999/g.
     let goldChange = 0
-    const goldChangeMatch = goldHtml.match(/15,?\d{3}[\s\S]{0,200}?class="gr-delta-(?:up|down)">\(([+-]?\d+)\)/)
-    if (goldChangeMatch) {
-      goldChange = parseInt(goldChangeMatch[1], 10)
+    if (gold24k > 0) {
+      const pricePattern = String(gold24k).split('').join(',?')
+      const goldChangeMatch = goldHtml.match(
+        new RegExp(`${pricePattern}[\\s\\S]{0,200}?class="gr-delta-(?:up|down)">\\(([+-]?\\d+)\\)`)
+      )
+      if (goldChangeMatch) goldChange = parseInt(goldChangeMatch[1], 10)
     }
 
     // Silver: intro text has "₹285 per gram"
