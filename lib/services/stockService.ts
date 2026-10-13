@@ -1,4 +1,4 @@
-import { fetchGoogleFinanceStock } from './googleFinanceService'
+import { fetchGoogleFinanceStock, fetchGoogleFinanceQuote } from './googleFinanceService'
 import { getYahooFinance } from './yahooLazy'
 
 export interface StockMoverData {
@@ -151,7 +151,6 @@ async function fetchMoversForCategory(
 
 export async function getNiftyChangePercent(): Promise<number | null> {
   try {
-    const { fetchGoogleFinanceQuote } = await import('./googleFinanceService')
     const gf = await fetchGoogleFinanceQuote('^NSEI')
     if (gf && Number.isFinite(gf.changePercent)) return gf.changePercent
   } catch {}
