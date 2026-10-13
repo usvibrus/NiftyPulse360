@@ -45,6 +45,11 @@ FAQ rules:
 function buildPrompt(stock: StockAnalysisInput, news: NewsItem[]): string {
   const direction = stock.eventType === 'RISE' ? 'rose' : 'fell'
   const volRatio = stock.avgVolume > 0 ? (stock.volume / stock.avgVolume).toFixed(1) : 'N/A'
+  // stockService only has average volume (it passes it as both values), so don't tell the
+  // model that today's volume matched the average.
+  const volumeLine = stock.volume > 0 && stock.volume !== stock.avgVolume
+    ? `Volume: ${Math.round(stock.volume).toLocaleString('en-IN')} shares (${volRatio}x the 30-day average of ${Math.round(stock.avgVolume).toLocaleString('en-IN')})`
+    : `Average daily volume: ${Math.round(stock.avgVolume).toLocaleString('en-IN')} shares (today's volume not available)`
   const newsBlock = news.length > 0
     ? news.slice(0, 5).map(n => `- ${n.title} (${n.source})`).join('\n')
     : '- No major news in last 48 hours'
@@ -53,10 +58,10 @@ function buildPrompt(stock: StockAnalysisInput, news: NewsItem[]): string {
 
 Stock: ${stock.companyName} (${stock.symbol})
 Date: ${stock.date}
-Price ${direction} ${Math.abs(stock.changePercent)}%
-Open: ₹${stock.open} | Close: ₹${stock.close} | High: ₹${stock.high} | Low: ₹${stock.low}
-Volume: ${stock.volume.toLocaleString('en-IN')} shares (${volRatio}x the 30-day average of ${stock.avgVolume.toLocaleString('en-IN')})
-52-Week High: ₹${stock.week52High} | 52-Week Low: ₹${stock.week52Low}
+Price ${direction} ${Math.abs(stock.changePercent).toFixed(2)}%
+Open: ₹${stock.open.toFixed(2)} | Close: ₹${stock.close.toFixed(2)} | High: ₹${stock.high.toFixed(2)} | Low: ₹${stock.low.toFixed(2)}
+${volumeLine}
+52-Week High: ₹${stock.week52High.toFixed(2)} | 52-Week Low: ₹${stock.week52Low.toFixed(2)}
 Sector: ${stock.sector}
 Sector index change today: ${stock.sectorChange !== null ? stock.sectorChange.toFixed(2) + '%' : 'N/A'}
 Nifty 50 change today: ${stock.niftyChange !== null ? stock.niftyChange.toFixed(2) + '%' : 'N/A'}
