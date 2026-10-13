@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyCronAuth } from '@/lib/utils/cronAuth'
 import { prisma } from '@/lib/db/prisma'
-import { fetchGoogleFinanceQuote } from '@/lib/services/googleFinanceService'
 import { pingNewUrl } from '@/lib/seo/indexingService'
 import { nowIST, todayIST } from '@/lib/utils/dateUtils'
 import { format } from 'date-fns'
@@ -68,7 +67,6 @@ export async function POST(request: Request) {
     let crudeOil: number | null = null
     let crudeChange: number | null = null
     try {
-      const crudeQuote = await fetchGoogleFinanceQuote('^NSEI') // placeholder — use commodity service
       // Try fetching crude from Yahoo
       const { getYahooFinance } = await import('@/lib/services/yahooLazy')
       const yf = await getYahooFinance()
