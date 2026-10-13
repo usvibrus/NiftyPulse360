@@ -45,7 +45,8 @@ export async function aggregateMarketWrap(date: Date): Promise<MarketWrapData> {
 
   const losers = stocks
     .filter(s => s.eventType === 'FALL')
-    .sort((a, b) => a.changePercent - b.changePercent)
+    // changePercent is stored as a positive magnitude, so sort descending to get the biggest losers
+    .sort((a, b) => b.changePercent - a.changePercent)
     .slice(0, 5)
     .map(s => ({ symbol: s.symbol, companyName: s.companyName, changePercent: -s.changePercent, closePrice: s.closePrice }))
 
