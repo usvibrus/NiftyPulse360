@@ -166,7 +166,8 @@ ${news.map(n => `
 
 export function generateCommodityContent(commodity: CommodityData, news: NewsItem[], date: Date): string {
   const d = formatDateIST(date, 'dd MMMM yyyy')
-  const name = commodity.commodity.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
+  // "CRUDE_OIL" -> "Crude Oil" (lowercase first, otherwise the title-case regex is a no-op)
+  const name = commodity.commodity.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
   const verb = commodity.eventType === 'RISE' ? 'rose' : 'fell'
 
   return `
