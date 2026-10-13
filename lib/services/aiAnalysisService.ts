@@ -198,14 +198,17 @@ function fallbackAnalysis(stock: StockAnalysisInput, news: NewsItem[]): string {
   const newsTrigger = news.length > 0
     ? `Today's news shows: ${news[0].title}.`
     : 'No major company-specific news was published in the last 48 hours.'
+  // changePercent is a magnitude, so compare the signed move with the sector. Without sector
+  // data say nothing, instead of "data unavailable, with the stock outperforming its sector".
+  const signedChange = stock.eventType === 'RISE' ? stock.changePercent : -stock.changePercent
   const sectorText = stock.sectorChange !== null
-    ? `The ${stock.sector || 'broader'} sector moved ${stock.sectorChange > 0 ? 'up' : 'down'} ${Math.abs(stock.sectorChange).toFixed(1)}% today`
-    : 'Sector performance data unavailable'
+    ? ` The ${stock.sector || 'broader'} sector moved ${stock.sectorChange > 0 ? 'up' : 'down'} ${Math.abs(stock.sectorChange).toFixed(1)}% today, with the stock ${signedChange > stock.sectorChange ? 'outperforming' : 'underperforming'} its sector.`
+    : ''
   const week52Text = stock.week52High > 0
     ? `The 52-week range stands at ₹${stock.week52Low.toFixed(0)} to ₹${stock.week52High.toFixed(0)}.`
     : ''
 
-  return `${stock.companyName} (${stock.symbol}) shares ${verb} ${stock.changePercent.toFixed(2)}% on ${stock.date}, closing at ₹${stock.close.toFixed(2)}. ${newsTrigger} Volume today was ${(stock.volume / 100000).toFixed(1)}L shares, ${volRatio}x the 30-day average — ${parseFloat(volRatio) > 1.5 ? 'indicating elevated trading activity and potential institutional interest' : 'reflecting moderate participation'}. ${sectorText}, ${stock.changePercent > Math.abs(stock.sectorChange || 0) ? 'with the stock outperforming its sector' : 'broadly in line with sector trend'}. ${week52Text} Investors should monitor follow-up volume and any further news in coming sessions to confirm the trend.`
+  return `${stock.companyName} (${stock.symbol}) shares ${verb} ${stock.changePercent.toFixed(2)}% on ${stock.date}, closing at ₹${stock.close.toFixed(2)}. ${newsTrigger} Volume today was ${(stock.volume / 100000).toFixed(1)}L shares, ${volRatio}x the 30-day average — ${parseFloat(volRatio) > 1.5 ? 'indicating elevated trading activity and potential institutional interest' : 'reflecting moderate participation'}.${sectorText} ${week52Text} Investors should monitor follow-up volume and any further news in coming sessions to confirm the trend.`
 }
 
 function fallbackFAQ(stock: StockAnalysisInput, news: NewsItem[]): { question: string; answer: string }[] {
