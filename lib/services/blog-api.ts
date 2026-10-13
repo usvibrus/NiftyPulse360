@@ -52,7 +52,7 @@ export async function fetchArticles(
   try {
     const res = await fetch(
       `${API_BASE}/articles?page=${page}&limit=${limit}`,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 60 }, signal: AbortSignal.timeout(10000) }
     )
 
     if (!res.ok) {
@@ -79,7 +79,7 @@ export async function fetchArticleBySlug(
   try {
     const res = await fetch(
       `${API_BASE}/articles/${encodeURIComponent(slug)}?format=${format}`,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 60 }, signal: AbortSignal.timeout(10000) }
     )
 
     if (!res.ok) {
