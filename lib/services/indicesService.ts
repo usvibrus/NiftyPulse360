@@ -33,12 +33,15 @@ export async function getIndexMovers(): Promise<IndexMoverData[]> {
   let yahooFinance: Awaited<ReturnType<typeof getYahooFinance>> | null = null
 
   for (const idx of INDICES) {
-    let added = false
+    // Whether Google Finance returned a usable quote at all. A valid quote with a small
+    // move must not fall through to Yahoo, which can report a different change basis.
+    let gfOk = false
 
     // 1. Try Google Finance first (works on cloud, no API key)
     try {
       const gf = await fetchGoogleFinanceIndex(idx.symbol)
-      if (gf && gf.price > 0 && Math.abs(gf.changePercent) >= 0.5) {
+      gfOk = !!gf && gf.price > 0
+      if (gf && gfOk && Math.abs(gf.changePercent) >= 0.5) {
         movers.push({
           indexName: idx.name,
           indexSymbol: idx.symbol,
@@ -50,14 +53,13 @@ export async function getIndexMovers(): Promise<IndexMoverData[]> {
           highValue: gf.high,
           lowValue: gf.low,
         })
-        added = true
       }
     } catch (error) {
       console.error(`[indicesService] Google Finance failed for ${idx.symbol}:`, error instanceof Error ? error.message : error)
     }
 
     // 2. Fallback to Yahoo Finance (rarely works on cloud, but try)
-    if (!added) {
+    if (!gfOk) {
       try {
         if (!yahooFinance) yahooFinance = await getYahooFinance()
         const quote = await yahooFinance.quote(idx.symbol) as Record<string, unknown>
