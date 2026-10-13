@@ -53,5 +53,3 @@ ${urls}
     },
   })
 }
-
-// Sitemap format verified
