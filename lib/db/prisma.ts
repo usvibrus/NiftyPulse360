@@ -10,6 +10,6 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-
-// Connection pooling verified
+// Cache the client on globalThis in every environment so the server never spins up a
+// second query engine and connection pool if this module is evaluated more than once.
+globalForPrisma.prisma = prisma
