@@ -133,8 +133,8 @@ export async function fetchNseIpos(): Promise<IpoData[]> {
         priceBandMin: min,
         priceBandMax: max,
         issuePrice: max,
-        lotSize: issue.minimumLotSize ? parseInt(issue.minimumLotSize) : null,
-        issueSizeCr: issue.issueSize ? parseFloat(issue.issueSize) : null,
+        lotSize: toInteger(issue.minimumLotSize),
+        issueSizeCr: toNumber(issue.issueSize),
         freshIssue: null,
         offerForSale: null,
         openDate,
@@ -180,6 +180,18 @@ function parsePriceBand(band: string): [number | null, number | null] {
   const parsed = numbers.map(n => parseFloat(n.replace(/,/g, '')))
   if (parsed.length === 1) return [parsed[0], parsed[0]]
   return [Math.min(...parsed), Math.max(...parsed)]
+}
+
+// NSE sends numbers as strings, sometimes with commas ("1,23,456") or placeholders ("N/A").
+// parseFloat("1,23,456") is 1 and parseInt("N/A") is NaN, which Prisma rejects for Int columns.
+function toNumber(value: unknown): number | null {
+  const n = parseFloat(String(value ?? '').replace(/,/g, ''))
+  return Number.isFinite(n) ? n : null
+}
+
+function toInteger(value: unknown): number | null {
+  const n = toNumber(value)
+  return n === null ? null : Math.round(n)
 }
 
 function getRegistrarUrl(registrar: string | null): string | null {
