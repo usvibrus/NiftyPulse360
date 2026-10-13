@@ -1,9 +1,14 @@
+// Building an Intl.NumberFormat is relatively expensive and these run for every number on
+// every generated page, so create the formatters once.
+const INR_FORMAT = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
+const NUMBER_FORMAT = new Intl.NumberFormat('en-IN')
+
 export function formatINR(value: number): string {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value)
+  return INR_FORMAT.format(value)
 }
 
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-IN').format(value)
+  return NUMBER_FORMAT.format(value)
 }
 
 export function formatPercent(value: number): string {
