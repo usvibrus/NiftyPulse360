@@ -110,7 +110,8 @@ function parseAbbreviatedNumber(s: string): number {
   const num = parseFloat(m[1])
   if (!Number.isFinite(num)) return 0
   const mult: Record<string, number> = { T: 1e12, B: 1e9, M: 1e6, K: 1e3, '': 1 }
-  return num * (mult[m[2]] ?? 1)
+  // Whole numbers only: "2.03M" * 1e6 is 2029999.9999999998, and volumes end up in BigInt columns
+  return Math.round(num * (mult[m[2]] ?? 1))
 }
 
 function parseNumber(s: string): number {
