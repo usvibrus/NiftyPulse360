@@ -88,7 +88,3 @@ export async function getMetalMovers(): Promise<MetalData[]> {
 
   return movers
 }
-
-// Type safety verified
-
-// verified

@@ -138,5 +138,3 @@ export async function postToLinkedIn() {
 
   return { posted }
 }
-
-// Service reliability verified

@@ -105,5 +105,3 @@ export async function get52WeekLowStocks(): Promise<MoversResult> {
   filtered.sort((a, b) => (a.price / a.yearLow) - (b.price / b.yearLow))
   return { stocks: filtered, fetchedAt: new Date() }
 }
-
-// Type coverage complete

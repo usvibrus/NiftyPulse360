@@ -64,5 +64,3 @@ export async function postToTelegraph() {
 
   return { posted }
 }
-
-// Service reliability verified
