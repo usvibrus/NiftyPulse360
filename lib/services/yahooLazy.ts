@@ -25,7 +25,6 @@ async function yfFetch(path: string): Promise<unknown> {
 
 interface YFClient {
   quote: (symbol: string) => Promise<unknown>
-  quoteSummary: (symbol: string, opts: { modules: string[] }) => Promise<unknown>
 }
 
 export async function getYahooFinance(): Promise<YFClient> {
@@ -72,15 +71,6 @@ export async function getYahooFinance(): Promise<YFClient> {
         regularMarketDayHigh: (lastIdx >= 0 ? quotes?.high?.[lastIdx] : null) ?? price,
         regularMarketDayLow: (lastIdx >= 0 ? quotes?.low?.[lastIdx] : null) ?? price,
       }
-    },
-
-    async quoteSummary(symbol: string, opts: { modules: string[] }): Promise<unknown> {
-      const modules = opts.modules.join(',')
-      const data = await yfFetch(`/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}`) as {
-        quoteSummary?: { result?: Array<Record<string, unknown>> }
-      }
-      const result = data?.quoteSummary?.result?.[0]
-      return result || {}
     },
   }
 }
