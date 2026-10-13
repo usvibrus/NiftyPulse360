@@ -41,7 +41,8 @@ export function generateIpoPageContent(ipo: IpoPageData): string {
   const sections: string[] = []
 
   // Section 1: Key Details Table
-  const expectedListing = ipo.priceBandMax && ipo.gmpValue
+  // A GMP of 0 is real data (flat grey market); only null means "not available"
+  const expectedListing = ipo.priceBandMax && ipo.gmpValue !== null
     ? `₹${(ipo.priceBandMax + ipo.gmpValue).toFixed(0)}`
     : '—'
 
@@ -66,13 +67,15 @@ export function generateIpoPageContent(ipo: IpoPageData): string {
   // Section 2: GMP
   if (ipo.gmpValue !== null) {
     const gmpSign = ipo.gmpValue >= 0 ? '+' : ''
+    // Sign goes before the currency symbol: "-₹20", not "₹-20"
+    const gmpText = `${ipo.gmpValue >= 0 ? '+' : '-'}₹${Math.abs(ipo.gmpValue)}`
     sections.push(`
 <section class="ipo-gmp">
   <h2>${ipo.companyName} IPO GMP Today</h2>
-  <p>The current Grey Market Premium (GMP) for ${ipo.companyName} IPO is <strong>${gmpSign}₹${ipo.gmpValue}</strong>${ipo.gmpPercent ? ` (${gmpSign}${ipo.gmpPercent.toFixed(1)}%)` : ''}.</p>
+  <p>The current Grey Market Premium (GMP) for ${ipo.companyName} IPO is <strong>${gmpText}</strong>${ipo.gmpPercent ? ` (${gmpSign}${ipo.gmpPercent.toFixed(1)}%)` : ''}.</p>
   <table class="ipo-table">
     <tr><td><strong>Issue Price</strong></td><td>${ipo.priceBandMax ? formatCurrency(ipo.priceBandMax) : 'TBA'}</td></tr>
-    <tr><td><strong>GMP</strong></td><td>${gmpSign}₹${ipo.gmpValue}</td></tr>
+    <tr><td><strong>GMP</strong></td><td>${gmpText}</td></tr>
     <tr><td><strong>Expected Listing Price</strong></td><td>${expectedListing}</td></tr>
   </table>
   <p><em>Note: GMP is unofficial and based on grey market activity. Actual listing price may differ.</em></p>
