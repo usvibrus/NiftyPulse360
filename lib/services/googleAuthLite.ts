@@ -26,12 +26,25 @@ function createJWT(email: string, privateKey: string, scope: string): string {
 
 let cachedToken: { token: string; scope: string; expiresAt: number } | null = null
 
+// One in-flight token request per scope, so parallel callers (e.g. 10 concurrent
+// Indexing API pings on a cold cache) share a single OAuth round-trip.
+const inflight = new Map<string, Promise<string>>()
+
 export async function getGoogleAccessToken(email: string, rawKey: string, scope: string): Promise<string> {
   const now = Date.now()
   if (cachedToken && cachedToken.scope === scope && cachedToken.expiresAt > now + 60000) {
     return cachedToken.token
   }
 
+  const pending = inflight.get(scope)
+  if (pending) return pending
+
+  const request = requestAccessToken(email, rawKey, scope).finally(() => inflight.delete(scope))
+  inflight.set(scope, request)
+  return request
+}
+
+async function requestAccessToken(email: string, rawKey: string, scope: string): Promise<string> {
   const privateKey = rawKey.replace(/\\n/g, '\n')
   const jwt = createJWT(email, privateKey, scope)
 
@@ -50,11 +63,15 @@ export async function getGoogleAccessToken(email: string, rawKey: string, scope:
     throw new Error(`Google OAuth failed (${res.status}): ${body.slice(0, 200)}`)
   }
 
-  const data = await res.json()
+  const data = await res.json() as { access_token?: string; expires_in?: number }
+  // A missing access_token would otherwise be sent as "Bearer undefined", and a missing
+  // expires_in made expiresAt NaN so the token was never reused.
+  if (!data.access_token) throw new Error('Google OAuth response is missing access_token')
+
   cachedToken = {
     token: data.access_token,
     scope,
-    expiresAt: now + (data.expires_in * 1000),
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
   }
   return data.access_token
 }
