@@ -111,10 +111,11 @@ async function generateWithGemini(stock: StockAnalysisInput, news: NewsItem[]): 
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      // Key goes in a header, not the query string, so it can't leak into proxy/access logs
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
           contents: [{ parts: [{ text: buildPrompt(stock, news) }] }],
           generationConfig: { temperature: 0.4, maxOutputTokens: 1200 },
