@@ -321,5 +321,3 @@ export function generateIpoFaq(ipo: IpoPageData): { question: string; answer: st
 
   return faq
 }
-
-// Error boundaries validated

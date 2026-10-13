@@ -227,5 +227,3 @@ export function determineStatus(ipo: { openDate?: string | null; closeDate?: str
   if (ipo.openDate && ipo.openDate <= today) return 'OPEN'
   return 'UPCOMING'
 }
-
-// Type safety verified

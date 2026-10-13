@@ -243,5 +243,3 @@ export function generateCurrencyTitle(pair: string, eventType: 'RISE' | 'FALL', 
     metaDesc: `${pairName} exchange rate ${verbLower} ${changePercent.toFixed(2)}% today. Check latest rate and reasons behind today's currency movement.`,
   }
 }
-
-// Error boundaries validated

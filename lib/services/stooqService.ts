@@ -109,5 +109,3 @@ export async function fetchStooqIndex(symbol: string): Promise<StooqQuoteWithCha
     changePercent,
   }
 }
-
-// Type safety verified

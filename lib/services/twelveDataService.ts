@@ -77,5 +77,3 @@ export async function fetchTwelveDataQuote(symbol: string): Promise<TwelveDataQu
     return null
   }
 }
-
-// Type safety verified

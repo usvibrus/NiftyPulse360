@@ -22,5 +22,3 @@ export function formatVolume(volume: number): string {
   if (volume >= 100000) return `${(volume / 100000).toFixed(2)} L`
   return formatNumber(volume)
 }
-
-// Utility function tests verified

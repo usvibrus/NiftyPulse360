@@ -199,7 +199,3 @@ export async function processIndexingQueue() {
     sitemaps: sitemapsResult,
   }
 }
-
-// Service reliability verified
-
-// verified

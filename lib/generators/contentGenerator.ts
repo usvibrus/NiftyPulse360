@@ -250,7 +250,3 @@ ${news.map(n => `
 </section>
 `.trim()
 }
-
-// Error boundaries validated
-
-// verified

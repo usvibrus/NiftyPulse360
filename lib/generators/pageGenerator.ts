@@ -314,7 +314,3 @@ export async function generateCommodityPages() {
 
   return stats
 }
-
-// Error boundaries validated
-
-// verified
