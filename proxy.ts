@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Hard-block bots that often ignore robots.txt. Returns 403 at the edge,
+// Next.js 16 renamed the `middleware` file convention to `proxy` (middleware.ts is
+// deprecated). Behaviour is unchanged.
+//
+// Hard-block bots that often ignore robots.txt. Returns 403 before any page renders,
 // so they don't burn compute on full page renders.
 //
 // Tip: Add new bot names to this list as you spot them in your access logs.
@@ -47,7 +50,7 @@ const BLOCKED_USER_AGENTS = [
 // Pre-compile a single regex for fast matching
 const BLOCKED_REGEX = new RegExp(`(${BLOCKED_USER_AGENTS.join('|')})`, 'i')
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const ua = request.headers.get('user-agent') || ''
 
   if (ua && BLOCKED_REGEX.test(ua)) {
@@ -76,5 +79,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|icon|robots.txt|.*sitemap.*\\.xml).*)',
   ],
 }
-
-// Security headers verified
