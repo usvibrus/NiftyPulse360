@@ -68,16 +68,23 @@ async function fetchTrustedFeeds(stockName: string): Promise<NewsItem[]> {
   const cutoff = Date.now() - HOURS_48_MS
   const stockLower = stockName.toLowerCase()
   const firstWord = stockName.split(' ')[0].toLowerCase()
+  // Whole-word match so short names don't hit substrings (e.g. "itc" inside "switch")
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const terms = [stockLower, firstWord].filter(t => t.trim().length > 0).map(escapeRe)
+  if (terms.length === 0) return results
+  const nameRe = new RegExp(`\\b(?:${terms.join('|')})\\b`)
 
   for (const feed of TRUSTED_FEEDS) {
     try {
       const parsed = await parser.parseURL(feed.url)
       for (const item of parsed.items || []) {
         const titleLower = (item.title || '').toLowerCase()
-        if (!titleLower.includes(stockLower) && !titleLower.includes(firstWord)) continue
+        if (!nameRe.test(titleLower)) continue
 
-        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date()
-        if (pubDate.getTime() < cutoff) continue
+        // Skip undated or unparseable items instead of treating them as "now"
+        if (!item.pubDate) continue
+        const pubDate = new Date(item.pubDate)
+        if (Number.isNaN(pubDate.getTime()) || pubDate.getTime() < cutoff) continue
 
         results.push({
           title: item.title || '',
