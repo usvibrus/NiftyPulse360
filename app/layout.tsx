@@ -97,11 +97,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     url: SITE,
     publisher: { '@id': `${SITE}/#organization` },
     inLanguage: 'en-IN',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', urlTemplate: `${SITE}/search?q={search_term_string}` },
-      'query-input': 'required name=search_term_string',
-    },
+    // No SearchAction: there is no /search route, so the sitelinks search box would
+    // send users (and Google's validator) to a 404.
   }
 
   return (
