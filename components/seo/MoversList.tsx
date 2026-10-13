@@ -1,4 +1,3 @@
-// Component reviewed
 import Link from 'next/link'
 import { format } from 'date-fns'
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema'

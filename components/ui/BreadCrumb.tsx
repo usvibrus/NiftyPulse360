@@ -1,4 +1,3 @@
-// UI component verified
 import Link from 'next/link'
 
 interface BreadCrumbProps {

@@ -1,4 +1,3 @@
-// Component reviewed
 interface BreadcrumbItem {
   name: string
   url: string

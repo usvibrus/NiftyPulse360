@@ -1,4 +1,3 @@
-// UI component verified
 'use client'
 
 import { useEffect } from 'react'
