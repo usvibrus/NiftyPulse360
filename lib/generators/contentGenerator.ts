@@ -6,6 +6,22 @@ import type { IndexMoverData } from '@/lib/services/indicesService'
 import type { MetalData } from '@/lib/services/goldService'
 import type { CommodityData, CurrencyData } from '@/lib/services/commodityService'
 
+// Escape untrusted text (RSS titles/snippets, LLM output) before interpolating it into
+// HTML that the pages render with dangerouslySetInnerHTML.
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Only allow http(s) links from feeds; anything else (e.g. javascript:) becomes inert.
+function safeUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? esc(url) : '#'
+}
+
 export interface StockExtras {
   aiAnalysis: string
   faq: { question: string; answer: string }[]
@@ -27,7 +43,7 @@ export function generateStockContent(stock: StockMoverData, news: NewsItem[], da
 <section class="key-reasons">
 <h2>Key Reasons for Today's ${stock.eventType === 'RISE' ? 'Rise' : 'Fall'}</h2>
 <div class="ai-analysis">
-${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('')}
+${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${esc(p.trim())}</p>`).join('')}
 </div>
 </section>`.trim()
 
@@ -63,9 +79,9 @@ ${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</
 <p class="text-sm text-[#666] mb-3">Showing news from last 48 hours</p>
 ${news.map(n => `
 <article class="news-item-card">
-<h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="news-meta">${n.source} • ${n.publishedAt}</p>
-${n.snippet ? `<p class="news-snippet">${n.snippet.substring(0, 200)}${n.snippet.length > 200 ? '...' : ''}</p>` : ''}
+<h3><a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+<p class="news-meta">${esc(n.source)} • ${n.publishedAt}</p>
+${n.snippet ? `<p class="news-snippet">${esc(n.snippet.substring(0, 200))}${n.snippet.length > 200 ? '...' : ''}</p>` : ''}
 </article>`).join('')}
 </section>` : `
 <section class="news-section">
@@ -79,8 +95,8 @@ ${n.snippet ? `<p class="news-snippet">${n.snippet.substring(0, 200)}${n.snippet
 <h2>Frequently Asked Questions About ${stock.companyName}</h2>
 ${extras.faq.map(f => `
 <div class="faq-item">
-<h3>${f.question}</h3>
-<p>${f.answer}</p>
+<h3>${esc(f.question)}</h3>
+<p>${esc(f.answer)}</p>
 </div>`).join('')}
 </section>` : ''
 
@@ -114,7 +130,7 @@ export function generateIndexContent(index: IndexMoverData, news: NewsItem[], da
 <h2>Why Did ${index.indexName} ${index.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
 <p>The ${index.indexName} ${verb} by ${Math.round(index.changePoints)} points (${index.changePercent.toFixed(2)}%) today, ${d}. The index opened at ${formatNumber(index.openValue)} and closed at ${formatNumber(index.closeValue)}, with an intraday high of ${formatNumber(index.highValue)} and low of ${formatNumber(index.lowValue)}.</p>
 <p>Here are the key factors behind today's market ${sentiment}:</p>
-<ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || '<li>Broad market movement driven by global cues and FII/DII activity</li>'}</ul>
+<ul>${news.map(n => `<li><strong>${esc(n.source)}:</strong> ${esc(n.title)}</li>`).join('\n') || '<li>Broad market movement driven by global cues and FII/DII activity</li>'}</ul>
 <p>The ${index.indexName} movement today reflects ${index.eventType === 'RISE' ? 'positive sentiment driven by buying interest across key sectors' : 'selling pressure amid concerns over global and domestic factors'}. Traders should watch for follow-through in the next session to confirm the trend direction.</p>
 </section>
 
@@ -122,8 +138,8 @@ export function generateIndexContent(index: IndexMoverData, news: NewsItem[], da
 <h2>Latest Market News</h2>
 ${news.map(n => `
 <article class="news-item border-b pb-3 mb-3">
-<h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="text-sm text-gray-500">${n.source} • ${n.publishedAt}</p>
+<h3><a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+<p class="text-sm text-gray-500">${esc(n.source)} • ${n.publishedAt}</p>
 </article>`).join('') || '<p>No specific news found. Movement likely driven by global market cues.</p>'}
 </section>
 `.trim()
@@ -149,7 +165,7 @@ export function generateMetalContent(metal: MetalData, news: NewsItem[], date: D
 <h2>Why Did ${metalName} Price ${metal.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
 <p>${metalName} prices in India ${verb} by ${metal.changePercent.toFixed(2)}% today, ${d}. The current price of ${metal.carat || 'pure'} ${metalName.toLowerCase()} is ${formatINR(metal.pricePerGram)} per gram and ${formatINR(metal.pricePerTola)} per tola (11.66 grams). In international markets, ${metalName.toLowerCase()} is trading at $${metal.pricePerOunce.toFixed(2)} per troy ounce.</p>
 <p>Key reasons behind today's ${metalName.toLowerCase()} price movement:</p>
-<ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || `<li>Global ${metalName.toLowerCase()} demand and supply dynamics</li><li>US Dollar movement and Federal Reserve policy expectations</li><li>Geopolitical tensions and safe-haven demand</li>`}</ul>
+<ul>${news.map(n => `<li><strong>${esc(n.source)}:</strong> ${esc(n.title)}</li>`).join('\n') || `<li>Global ${metalName.toLowerCase()} demand and supply dynamics</li><li>US Dollar movement and Federal Reserve policy expectations</li><li>Geopolitical tensions and safe-haven demand</li>`}</ul>
 <p>${metalName} prices in India are influenced by international prices, the USD/INR exchange rate, and domestic demand. ${metal.eventType === 'RISE' ? 'Rising prices suggest increased safe-haven demand or weakening of the US Dollar.' : 'Falling prices may indicate profit-booking or strengthening of the US Dollar.'} Investors should monitor global central bank policies and geopolitical developments for further direction.</p>
 </section>
 
@@ -157,8 +173,8 @@ export function generateMetalContent(metal: MetalData, news: NewsItem[], date: D
 <h2>Latest ${metalName} News</h2>
 ${news.map(n => `
 <article class="news-item border-b pb-3 mb-3">
-<h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="text-sm text-gray-500">${n.source} • ${n.publishedAt}</p>
+<h3><a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+<p class="text-sm text-gray-500">${esc(n.source)} • ${n.publishedAt}</p>
 </article>`).join('') || `<p>No specific ${metalName.toLowerCase()} news found today.</p>`}
 </section>
 `.trim()
@@ -183,7 +199,7 @@ ${commodity.priceINR ? `<div><span class="text-sm text-gray-500">Price (INR)</sp
 <h2>Why Did ${name} Price ${commodity.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
 <p>${name} prices ${verb} by ${commodity.changePercent.toFixed(2)}% today, ${d}, trading at $${commodity.priceUSD.toFixed(2)} per barrel. This movement has significant implications for the Indian economy given India's dependence on crude oil imports.</p>
 <p>Key factors behind today's price movement:</p>
-<ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || '<li>OPEC+ production decisions and supply outlook</li><li>Global demand expectations and economic data</li><li>Geopolitical tensions in oil-producing regions</li>'}</ul>
+<ul>${news.map(n => `<li><strong>${esc(n.source)}:</strong> ${esc(n.title)}</li>`).join('\n') || '<li>OPEC+ production decisions and supply outlook</li><li>Global demand expectations and economic data</li><li>Geopolitical tensions in oil-producing regions</li>'}</ul>
 <p>${commodity.eventType === 'RISE' ? 'Rising crude oil prices put pressure on India\'s import bill and can lead to higher fuel prices domestically. This may also impact inflation and the current account deficit.' : 'Falling crude oil prices are positive for India as they reduce the import bill and can lead to lower fuel prices, benefiting consumers and reducing inflationary pressures.'} Market participants should monitor OPEC decisions and global demand indicators for further direction.</p>
 </section>
 
@@ -191,8 +207,8 @@ ${commodity.priceINR ? `<div><span class="text-sm text-gray-500">Price (INR)</sp
 <h2>Latest ${name} News</h2>
 ${news.map(n => `
 <article class="news-item border-b pb-3 mb-3">
-<h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="text-sm text-gray-500">${n.source} • ${n.publishedAt}</p>
+<h3><a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+<p class="text-sm text-gray-500">${esc(n.source)} • ${n.publishedAt}</p>
 </article>`).join('') || '<p>No specific commodity news found today.</p>'}
 </section>
 `.trim()
@@ -216,7 +232,7 @@ export function generateCurrencyContent(currency: CurrencyData, news: NewsItem[]
 <h2>Why Did ${pairName} ${currency.eventType === 'RISE' ? 'Rise' : 'Fall'} Today?</h2>
 <p>The ${pairName} exchange rate ${verb} by ${currency.changePercent.toFixed(2)}% today, ${d}, with the rate at ₹${currency.rateValue.toFixed(4)}. ${currency.eventType === 'RISE' ? 'The Indian Rupee weakened against the foreign currency.' : 'The Indian Rupee strengthened against the foreign currency.'}</p>
 <p>Key factors influencing today's currency movement:</p>
-<ul>${news.map(n => `<li><strong>${n.source}:</strong> ${n.title}</li>`).join('\n') || '<li>FII flows and foreign investment activity</li><li>RBI intervention and monetary policy stance</li><li>Global Dollar index movement</li>'}</ul>
+<ul>${news.map(n => `<li><strong>${esc(n.source)}:</strong> ${esc(n.title)}</li>`).join('\n') || '<li>FII flows and foreign investment activity</li><li>RBI intervention and monetary policy stance</li><li>Global Dollar index movement</li>'}</ul>
 <p>The Indian Rupee's movement is influenced by multiple factors including foreign portfolio flows, crude oil prices, RBI policy, and global risk sentiment. ${currency.eventType === 'RISE' ? 'A weaker Rupee increases import costs but benefits IT exporters.' : 'A stronger Rupee reduces import costs but may pressure export-oriented sectors.'}</p>
 </section>
 
@@ -224,8 +240,8 @@ export function generateCurrencyContent(currency: CurrencyData, news: NewsItem[]
 <h2>Latest Currency News</h2>
 ${news.map(n => `
 <article class="news-item border-b pb-3 mb-3">
-<h3><a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a></h3>
-<p class="text-sm text-gray-500">${n.source} • ${n.publishedAt}</p>
+<h3><a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+<p class="text-sm text-gray-500">${esc(n.source)} • ${n.publishedAt}</p>
 </article>`).join('') || '<p>No specific currency news found today.</p>'}
 </section>
 `.trim()
