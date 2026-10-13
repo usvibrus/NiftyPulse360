@@ -104,8 +104,9 @@ export async function generateStockPages() {
             slug, symbol: stock.symbol, companyName: stock.companyName, exchange: stock.exchange,
             sector: stock.sector, eventType: stock.eventType, changePercent: stock.changePercent,
             changeAmount: stock.changeAmount, openPrice: stock.openPrice, closePrice: stock.closePrice,
-            highPrice: stock.highPrice, lowPrice: stock.lowPrice, volume: BigInt(stock.volume),
-            avgVolume: stock.avgVolume > 0 ? BigInt(stock.avgVolume) : null,
+            // BigInt() throws a RangeError on non-integers (e.g. "2.03M" -> 2029999.9999999998)
+            highPrice: stock.highPrice, lowPrice: stock.lowPrice, volume: BigInt(Math.round(stock.volume || 0)),
+            avgVolume: stock.avgVolume > 0 ? BigInt(Math.round(stock.avgVolume)) : null,
             week52High: stock.week52High > 0 ? stock.week52High : null,
             week52Low: stock.week52Low > 0 ? stock.week52Low : null,
             niftyChange,
