@@ -231,7 +231,8 @@ function fallbackFAQ(stock: StockAnalysisInput, news: NewsItem[]): { question: s
     },
     {
       question: `What is ${stock.companyName}'s 52-week high and low?`,
-      answer: stock.week52High > 0
+      // Guard the range division: equal high/low (or a missing low) gave NaN% / Infinity%
+      answer: stock.week52High > stock.week52Low && stock.week52Low > 0
         ? `${stock.companyName}'s 52-week high is ₹${stock.week52High.toFixed(2)} and 52-week low is ₹${stock.week52Low.toFixed(2)}. The current price of ₹${stock.close.toFixed(2)} is ${((stock.close - stock.week52Low) / (stock.week52High - stock.week52Low) * 100).toFixed(0)}% of this range.`
         : `52-week high/low data is not available for ${stock.companyName} at this time.`,
     },
