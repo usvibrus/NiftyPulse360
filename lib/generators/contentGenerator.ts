@@ -34,7 +34,8 @@ export function generateStockContent(stock: StockMoverData, news: NewsItem[], da
   const sentiment = stock.eventType === 'RISE' ? 'rally' : 'decline'
   const volRatio = stock.avgVolume > 0 ? (stock.volume / stock.avgVolume).toFixed(1) : 'N/A'
   const isHighVolume = stock.avgVolume > 0 && stock.volume > stock.avgVolume * 1.5
-  const week52Range = stock.week52High > 0 && stock.week52Low > 0
+  // Equal high/low divides by zero ("NaN%"); a 0 low means the data is missing
+  const week52Range = stock.week52High > stock.week52Low && stock.week52Low > 0
     ? ((stock.closePrice - stock.week52Low) / (stock.week52High - stock.week52Low) * 100).toFixed(0)
     : null
 
@@ -48,7 +49,9 @@ ${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${esc(p.trim(
 </section>`.trim()
 
   // Block C: Volume Analysis
-  const volumeBlock = stock.avgVolume > 0 ? `
+  // Google Finance only gives average volume, which stockService passes as both volume and
+  // avgVolume. Without a real intraday figure this block claimed "1.0x the 30-day average".
+  const volumeBlock = stock.avgVolume > 0 && stock.volume !== stock.avgVolume ? `
 <section class="volume-analysis">
 <h2>What the Volume Tells Us</h2>
 <p>Trading volume today was <strong>${formatVolume(stock.volume)}</strong> shares, ${volRatio}x the 30-day average of ${formatVolume(stock.avgVolume)}. ${isHighVolume ? `This elevated volume on ${stock.eventType === 'RISE' ? 'an up' : 'a down'}-day is a ${stock.eventType === 'RISE' ? 'bullish' : 'bearish'} signal indicating ${stock.eventType === 'RISE' ? 'strong buying conviction and likely institutional participation' : 'aggressive selling and potential institutional unwinding'}.` : 'This is in line with normal trading activity, suggesting the move is driven more by retail flows than institutional repositioning.'}</p>
@@ -66,7 +69,7 @@ ${extras.aiAnalysis.split('\n').filter(p => p.trim()).map(p => `<p>${esc(p.trim(
 </section>`.trim()
 
   // Block: 52-Week Context
-  const week52Block = stock.week52High > 0 ? `
+  const week52Block = week52Range !== null ? `
 <section class="technical-snapshot">
 <h2>52-Week Range & Technical Context</h2>
 <p>${stock.companyName} has traded between <strong>₹${stock.week52Low.toFixed(2)}</strong> (52-week low) and <strong>₹${stock.week52High.toFixed(2)}</strong> (52-week high) over the past year. At the current price of ₹${stock.closePrice.toFixed(2)}, the stock is at ${week52Range}% of its 52-week range. ${parseInt(week52Range || '50') > 75 ? 'The stock is trading near its yearly highs, suggesting strong momentum.' : parseInt(week52Range || '50') < 25 ? 'The stock is trading near its yearly lows, which may attract value buyers but also signals caution.' : 'The stock is in the middle of its yearly range, leaving room for movement in either direction.'}</p>
