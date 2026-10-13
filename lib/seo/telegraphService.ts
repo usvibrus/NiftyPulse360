@@ -51,7 +51,9 @@ export async function postToTelegraph() {
           content,
           return_content: false,
         }),
+        signal: AbortSignal.timeout(15000),
       })
+      if (!res.ok) throw new Error(`Telegraph HTTP ${res.status}`)
       const data = await res.json()
       if (!data.ok) throw new Error(data.error)
       await prisma.stockEvent.update({ where: { id: s.id }, data: { telegraphPosted: true } })
