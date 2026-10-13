@@ -35,11 +35,13 @@ ${emoji} **${s.companyName}** (NSE: ${s.symbol}) shares ${verb} **${Math.abs(s.c
 | **Close** | ₹${s.closePrice.toFixed(2)} |
 | **High** | ₹${s.highPrice.toFixed(2)} |
 | **Low** | ₹${s.lowPrice.toFixed(2)} |
-| **Change** | ${s.changePercent > 0 ? '+' : ''}${s.changePercent.toFixed(2)}% (₹${s.changeAmount.toFixed(2)}) |
+| **Change** | ${s.eventType === 'RISE' ? '+' : '-'}${Math.abs(s.changePercent).toFixed(2)}% (₹${Math.abs(s.changeAmount).toFixed(2)}) |
 | **Volume** | ${Number(s.volume).toLocaleString('en-IN')} |
-${s.marketCap ? `| **Market Cap** | ₹${(s.marketCap / 10000000).toFixed(0)} Cr |` : ''}
-${s.week52High ? `| **52W High** | ₹${s.week52High.toFixed(2)} |` : ''}
-${s.week52Low ? `| **52W Low** | ₹${s.week52Low.toFixed(2)} |` : ''}
+${[
+  s.marketCap ? `| **Market Cap** | ₹${Math.round(s.marketCap / 1e7).toLocaleString('en-IN')} Cr |` : '',
+  s.week52High ? `| **52W High** | ₹${s.week52High.toFixed(2)} |` : '',
+  s.week52Low ? `| **52W Low** | ₹${s.week52Low.toFixed(2)} |` : '',
+].filter(Boolean).join('\n')}
 
 ---
 
