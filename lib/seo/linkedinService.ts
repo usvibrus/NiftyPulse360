@@ -78,7 +78,6 @@ export async function postToLinkedIn() {
   })
 
   for (const s of stocks) {
-    if (posted >= 10) break
     const verb = s.eventType === 'RISE' ? 'rose' : 'fell'
     const verbAction = s.eventType === 'RISE' ? 'surged' : 'dropped'
     const emoji = s.eventType === 'RISE' ? '📈' : '📉'
