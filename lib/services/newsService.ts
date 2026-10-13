@@ -45,7 +45,9 @@ async function fetchGoogleNews(query: string): Promise<NewsItem[]> {
 
     return (feed.items || [])
       .map(item => {
-        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date()
+        // Undated items get an invalid date and are filtered out below instead of
+        // being presented as "just published"
+        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date(NaN)
         return {
           title: item.title || '',
           url: item.link || '',
