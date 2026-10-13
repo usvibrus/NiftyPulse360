@@ -4,7 +4,8 @@ export async function postToDevTo() {
   const apiKey = process.env.DEV_TO_API_KEY
   if (!apiKey) { console.log('[devto] No API key configured'); return { posted: 0 } }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  // An empty fallback produced relative links (and a relative canonical_url) on dev.to
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({

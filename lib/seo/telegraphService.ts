@@ -4,7 +4,8 @@ export async function postToTelegraph() {
   const token = process.env.TELEGRAPH_ACCESS_TOKEN
   if (!token) { console.log('[telegraph] No token configured'); return { posted: 0 } }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  // An empty fallback produced relative links that are broken on third-party sites
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://niftypulse360.com'
   let posted = 0
 
   const stocks = await prisma.stockEvent.findMany({
