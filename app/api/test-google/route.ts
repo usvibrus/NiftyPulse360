@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getGoogleAccessToken } from '@/lib/services/googleAuthLite'
+import { verifyCronAuth } from '@/lib/utils/cronAuth'
 
-export async function GET() {
+// Diagnostic endpoint: it exposes the service-account email and the Search Console site
+// list, so it requires the same Bearer CRON_SECRET as the cron routes.
+export async function GET(request: Request) {
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
   const privateKey = process.env.GOOGLE_INDEXING_SA_PRIVATE_KEY
 
