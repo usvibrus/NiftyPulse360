@@ -55,8 +55,15 @@ export async function getCurrencyMovers(): Promise<CurrencyData[]> {
   // Lazy-load Yahoo Finance for the % change lookups inside the loop
   const yahooFinance = await getYahooFinance()
 
+  // Without a key the request goes to ".../v6/undefined/latest/USD" and always fails
+  const apiKey = process.env.EXCHANGERATE_API_KEY
+  if (!apiKey) {
+    console.warn('[commodityService] EXCHANGERATE_API_KEY not set, skipping currency movers')
+    return movers
+  }
+
   try {
-    const res = await fetch(`https://v6.exchangerate-api.com/v6/${process.env.EXCHANGERATE_API_KEY}/latest/USD`, {
+    const res = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`, {
       signal: AbortSignal.timeout(10000),
     })
     if (!res.ok) return movers
@@ -68,7 +75,8 @@ export async function getCurrencyMovers(): Promise<CurrencyData[]> {
       { pair: 'USD_INR', rate: rates.INR },
       { pair: 'EUR_INR', rate: rates.INR / rates.EUR },
       { pair: 'GBP_INR', rate: rates.INR / rates.GBP },
-    ]
+      // Drop pairs missing from the response, otherwise rateValue is stored as NaN
+    ].filter(p => Number.isFinite(p.rate) && p.rate > 0)
 
     // Use Yahoo for % change since ExchangeRate-API doesn't provide it
     for (const p of pairs) {
