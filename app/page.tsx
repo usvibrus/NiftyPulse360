@@ -8,11 +8,9 @@ import LiveSidebar from '@/components/ui/LiveSidebar'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [stocks, indices, metals] = await Promise.all([
-    prisma.stockEvent.findMany({ where: { isPublished: true }, orderBy: { publishedAt: 'desc' }, take: 15, select: { slug: true, companyName: true, symbol: true, eventType: true, changePercent: true, closePrice: true, volume: true, eventDate: true, publishedAt: true } }),
-    prisma.indexEvent.findMany({ where: { isPublished: true }, orderBy: { publishedAt: 'desc' }, take: 5, select: { slug: true, indexName: true, eventType: true, changePercent: true, changePoints: true, closeValue: true, eventDate: true } }),
-    prisma.metalEvent.findMany({ where: { isPublished: true }, orderBy: { publishedAt: 'desc' }, take: 4, select: { slug: true, metal: true, carat: true, eventType: true, changePercent: true, pricePerGram: true, eventDate: true } }),
-  ])
+  // Only stock movers are rendered on the home page. The index and metal queries that used
+  // to run alongside this one were never used, so every visit paid for two extra DB reads.
+  const stocks = await prisma.stockEvent.findMany({ where: { isPublished: true }, orderBy: { publishedAt: 'desc' }, take: 15, select: { slug: true, companyName: true, symbol: true, eventType: true, changePercent: true, closePrice: true, volume: true, eventDate: true, publishedAt: true } })
 
   const gainers = stocks.filter(s => s.eventType === 'RISE').slice(0, 8)
   const losers = stocks.filter(s => s.eventType === 'FALL').slice(0, 8)
