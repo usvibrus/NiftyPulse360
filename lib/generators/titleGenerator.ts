@@ -210,7 +210,8 @@ export function generateCommodityTitle(commodity: string, eventType: 'RISE' | 'F
   const dShort = format(date, 'MMM yyyy')
   const verb = eventType === 'RISE' ? 'Rises' : 'Falls'
   const verbLower = eventType === 'RISE' ? 'rises' : 'falls'
-  const name = commodity.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
+  // "CRUDE_OIL" -> "Crude Oil" (lowercase first, otherwise the title-case regex is a no-op)
+  const name = commodity.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
   const pct = formatPct(changePercent)
 
   const longTitle = `${name} Price ${verb} ${pct} Today: Reasons & Analysis (${d})`
