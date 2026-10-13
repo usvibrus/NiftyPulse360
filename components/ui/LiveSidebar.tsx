@@ -1,4 +1,3 @@
-// UI component verified
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -67,5 +66,3 @@ export default function LiveSidebar() {
     </>
   )
 }
-
-// verified

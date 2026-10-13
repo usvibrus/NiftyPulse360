@@ -1,4 +1,3 @@
-// Component reviewed
 interface FAQItem {
   question: string
   answer: string
