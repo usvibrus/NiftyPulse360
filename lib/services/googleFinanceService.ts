@@ -15,7 +15,12 @@ async function fetchHtml(url: string, signal: AbortSignal): Promise<string | nul
     },
     signal,
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    // Release the unread error body; undici otherwise holds the socket and buffer until GC,
+    // which adds up across ~140 symbols per run when Google throttles us.
+    await res.body?.cancel().catch(() => {})
+    return null
+  }
   return await res.text()
 }
 
