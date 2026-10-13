@@ -267,7 +267,7 @@ export function generateIpoFaq(ipo: IpoPageData): { question: string; answer: st
     question: `When is ${name} IPO listing date?`,
     answer: ipo.listingDate
       ? `${name} IPO is expected to list on ${formatDate(ipo.listingDate)} on ${ipo.exchange}.`
-      : `The listing date for ${name} IPO has not been announced yet. It is typically 6 trading days after the close date.`,
+      : `The listing date for ${name} IPO has not been announced yet. Under SEBI's T+3 timeline, IPOs typically list 3 working days after the issue closes.`,
   })
 
   faq.push({
