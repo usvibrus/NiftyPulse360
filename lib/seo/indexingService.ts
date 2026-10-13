@@ -88,32 +88,14 @@ async function pingWebSub(): Promise<boolean> {
   }
 }
 
-// LAYER 4: Sitemap pings — Google + Bing
+// LAYER 4: Sitemap pings — retired.
+// Google shut down www.google.com/ping (announced June 2023) and Bing retired its sitemap
+// ping in favour of IndexNow, so these four requests per publish only got 404/410 back
+// while being reported as success. Sitemaps are discovered via robots.txt and Search
+// Console, and Bing is covered by IndexNow above. The signature stays so callers and the
+// cron JSON output are unchanged.
 async function pingSitemaps(): Promise<{ google: boolean; bing: boolean }> {
-  const siteUrl = SITE()
-  const sitemaps = [`${siteUrl}/sitemap.xml`, `${siteUrl}/news-sitemap.xml`]
-  let googleOk = false
-  let bingOk = false
-
-  // Google
-  for (const sm of sitemaps) {
-    try {
-      await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sm)}`, { signal: AbortSignal.timeout(8000) })
-      googleOk = true
-    } catch {
-      // ignore - Google deprecated this endpoint but still returns 200 in many cases
-    }
-  }
-  // Bing
-  for (const sm of sitemaps) {
-    try {
-      await fetch(`https://www.bing.com/ping?sitemap=${encodeURIComponent(sm)}`, { signal: AbortSignal.timeout(8000) })
-      bingOk = true
-    } catch {
-      // ignore
-    }
-  }
-  return { google: googleOk, bing: bingOk }
+  return { google: false, bing: false }
 }
 
 // PUBLIC: Immediate post-publish pipeline for a single (or batch of) URL.
