@@ -51,8 +51,9 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
-      // Default rule for all unknown bots
-      { userAgent: '*', allow: '/', disallow: ['/api/', '/admin/', '/_next/', '/*?*utm_'] },
+      // Default rule for all unknown bots. /_next/ stays crawlable: search engines need
+      // the CSS/JS chunks to render pages, and blocking them is flagged as a render issue.
+      { userAgent: '*', allow: '/', disallow: ['/api/', '/admin/', '/*?*utm_'] },
       // Allow major search engines explicitly
       { userAgent: 'Googlebot', allow: '/', disallow: ['/api/', '/admin/'] },
       { userAgent: 'Googlebot-News', allow: '/', disallow: ['/api/', '/admin/'] },
