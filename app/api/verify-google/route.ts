@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getGoogleAccessToken } from '@/lib/services/googleAuthLite'
+import { verifyCronAuth } from '@/lib/utils/cronAuth'
 
 // Step 1: GET — get a verification token to add to DNS
 // Step 2: POST — verify ownership after DNS record is added
+// Both steps act on the site's Google account, so they require Bearer CRON_SECRET.
 
 export async function GET(request: Request) {
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const url = new URL(request.url)
   const action = url.searchParams.get('action') || 'token'
 
@@ -55,7 +61,11 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const email = process.env.GOOGLE_INDEXING_SA_EMAIL
   const privateKey = process.env.GOOGLE_INDEXING_SA_PRIVATE_KEY
   if (!email || !privateKey) return NextResponse.json({ error: 'No credentials' }, { status: 500 })
