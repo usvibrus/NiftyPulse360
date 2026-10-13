@@ -82,7 +82,8 @@ export async function fetchGoogleFinanceQuote(symbol: string): Promise<GoogleFin
     const changePercent = changeSection ? parseFloat(changeSection[1].replace(/[,%]/g, '')) : 0
 
     // Change points - look for pattern like "+312.40" near the percent
-    const changePointsMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)/)
+    // Negative lookahead so "+1.32" inside "+1.32%" isn't mistaken for the points change
+    const changePointsMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)(?![\d.%])/)
     let change = changePointsMatch ? parseFloat(changePointsMatch[1].replace(/,/g, '')) : 0
     if (change === 0 && changePercent !== 0) change = price * changePercent / 100
 
@@ -214,7 +215,7 @@ export async function fetchGoogleFinanceIndex(symbol: string): Promise<GoogleFin
     const changePercent = pctMatch ? parseFloat(pctMatch[1].replace(/,/g, '')) : 0
 
     // Change points
-    const chgMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)/)
+    const chgMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,]+\.\d+)(?![\d.%])/)
     let change = 0
     if (chgMatch) {
       change = parseNumber(chgMatch[1])
