@@ -68,7 +68,8 @@ async function fetchWithRetry(url: string, headers: Record<string, string>, retr
         signal: AbortSignal.timeout(15000),
       })
       if (res.ok) return res
-      if (res.status === 403 && i < retries) {
+      // NSE answers 401 or 403 until the session cookies are accepted; retry both
+      if ((res.status === 401 || res.status === 403) && i < retries) {
         await new Promise(r => setTimeout(r, 2000))
         continue
       }
@@ -84,15 +85,23 @@ export async function fetchNseIpos(): Promise<IpoData[]> {
   const ipos: IpoData[] = []
 
   try {
-    // First hit the main page to get cookies
-    await fetch('https://www.nseindia.com', {
-      headers: NSE_HEADERS,
-      signal: AbortSignal.timeout(10000),
-    })
+    // First hit the main page to get session cookies. Node's fetch has no cookie jar, so
+    // forward them explicitly, and don't abort the whole run if this priming call fails.
+    let cookie = ''
+    try {
+      const home = await fetch('https://www.nseindia.com', {
+        headers: NSE_HEADERS,
+        signal: AbortSignal.timeout(10000),
+      })
+      cookie = home.headers.getSetCookie().map(c => c.split(';')[0]).join('; ')
+      await home.body?.cancel()
+    } catch {
+      // continue without cookies
+    }
 
     const res = await fetchWithRetry(
       'https://www.nseindia.com/api/ipo-current-issue',
-      NSE_HEADERS
+      cookie ? { ...NSE_HEADERS, Cookie: cookie } : NSE_HEADERS
     )
     if (!res) return ipos
 
