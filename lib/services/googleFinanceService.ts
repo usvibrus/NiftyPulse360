@@ -124,6 +124,20 @@ function parseNumber(s: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
+// Google Finance HTML-escapes text ("Mahindra &amp; Mahindra Ltd"). Decode before the name
+// flows into slugs, page titles, news queries and social posts.
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+}
+
 /**
  * Fetch individual NSE stock data from Google Finance.
  * URL pattern: https://www.google.com/finance/quote/{SYMBOL}:NSE
@@ -147,8 +161,8 @@ export async function fetchGoogleFinanceStock(symbol: string): Promise<GoogleFin
     // Company name: <div class="gO24Ff">Reliance Industries Ltd</div> (appears multiple times, second is the page header)
     const nameMatches = [...html.matchAll(/class="gO24Ff"[^>]*>([^<]+)</g)]
     let companyName = symbol
-    if (nameMatches.length >= 2) companyName = nameMatches[1][1].trim()
-    else if (nameMatches.length >= 1) companyName = nameMatches[0][1].trim()
+    if (nameMatches.length >= 2) companyName = decodeHtmlEntities(nameMatches[1][1]).trim()
+    else if (nameMatches.length >= 1) companyName = decodeHtmlEntities(nameMatches[0][1]).trim()
 
     // Change percent
     const pctMatch = html.match(/class="N6SYTe"[\s\S]{0,500}?([+-][\d,.]+)%/)
