@@ -44,7 +44,7 @@ async function pingIndexNow(urls: string[]): Promise<{ success: boolean; count: 
   if (!key || !siteUrl || urls.length === 0) return { success: false, count: 0 }
 
   try {
-    await fetch('https://api.indexnow.org/indexnow', {
+    const res = await fetch('https://api.indexnow.org/indexnow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -55,6 +55,11 @@ async function pingIndexNow(urls: string[]): Promise<{ success: boolean; count: 
       }),
       signal: AbortSignal.timeout(10000),
     })
+    // IndexNow returns 200/202 on success; 4xx means a bad key, host mismatch or rate limit
+    if (!res.ok) {
+      console.error(`[indexing] IndexNow HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`)
+      return { success: false, count: 0 }
+    }
     console.log(`[indexing] IndexNow pinged ${urls.length} URLs (Bing + Yandex + others)`)
     return { success: true, count: urls.length }
   } catch (error) {
@@ -73,12 +78,17 @@ async function pingWebSub(): Promise<boolean> {
     const params = new URLSearchParams()
     params.append('hub.mode', 'publish')
     params.append('hub.url', feedUrl)
-    await fetch(hub, {
+    const res = await fetch(hub, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
       signal: AbortSignal.timeout(10000),
     })
+    // The hub answers 204 No Content when the publish ping is accepted
+    if (!res.ok) {
+      console.error(`[indexing] WebSub HTTP ${res.status} for ${feedUrl}`)
+      return false
+    }
     console.log(`[indexing] WebSub hub notified for ${feedUrl}`)
     return true
   } catch (error) {
