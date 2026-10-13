@@ -160,9 +160,14 @@ export async function fetchNseIpos(): Promise<IpoData[]> {
 
 function parseNseDate(dateStr: string): string | null {
   try {
-    const d = new Date(dateStr)
+    const trimmed = dateStr.trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+    const d = new Date(trimmed)
     if (isNaN(d.getTime())) return null
-    return d.toISOString().split('T')[0]
+    // NSE dates like "21-Oct-2024" parse as local midnight; toISOString() shifted them to
+    // the previous day on hosts east of UTC (e.g. TZ=Asia/Kolkata). Use the local parts.
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   } catch {
     return null
   }
