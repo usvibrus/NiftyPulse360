@@ -10,7 +10,6 @@ import { generateStockSlug, generateIndexSlug, generateMetalSlug, generateCommod
 import { generateStockTitle, generateIndexTitle, generateMetalTitle, generateCommodityTitle, generateCurrencyTitle } from './titleGenerator'
 import { generateStockContent, generateIndexContent, generateMetalContent, generateCommodityContent, generateCurrencyContent } from './contentGenerator'
 import { nowIST } from '@/lib/utils/dateUtils'
-import { pingNewUrl } from '@/lib/seo/indexingService'
 import { qualityGate } from './qualityGate'
 
 function delay(ms: number) {
@@ -122,9 +121,8 @@ export async function generateStockPages() {
           update: {},
         })
 
-        // Immediate post-publish ping (Google Indexing API + IndexNow + WebSub + sitemap)
-        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/stocks/${slug}`).catch(() => {})
-
+        // Search-engine pings (Google Indexing API + IndexNow + WebSub) run from the queue via
+        // processIndexingQueue() right after generation; pinging here too published URLs twice.
         stats.created++
       } catch (error) {
         console.error(`[pageGenerator] Failed for ${stock.symbol}:`, error)
@@ -172,8 +170,6 @@ export async function generateIndexPages() {
           create: { url: `${process.env.NEXT_PUBLIC_SITE_URL}/indices/${slug}`, pageType: 'index' },
           update: {},
         })
-
-        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/indices/${slug}`).catch(() => {})
 
         stats.created++
       } catch (error) {
@@ -223,8 +219,6 @@ export async function generateMetalPages() {
           update: {},
         })
 
-        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/gold/${slug}`).catch(() => {})
-
         stats.created++
       } catch (error) {
         console.error(`[pageGenerator] Failed for ${metal.metal}:`, error)
@@ -273,8 +267,6 @@ export async function generateCommodityPages() {
           update: {},
         })
 
-        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`).catch(() => {})
-
         stats.created++
       } catch (error) {
         console.error(`[pageGenerator] Failed for ${commodity.commodity}:`, error)
@@ -308,8 +300,6 @@ export async function generateCommodityPages() {
           create: { url: `${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`, pageType: 'currency' },
           update: {},
         })
-
-        pingNewUrl(`${process.env.NEXT_PUBLIC_SITE_URL}/commodities/${slug}`).catch(() => {})
 
         stats.created++
       } catch (error) {
