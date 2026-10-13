@@ -117,7 +117,7 @@ export async function GET() {
     }
 
     // Metals
-    const metalItems: any[] = []
+    const metalItems: { symbol: string; price: number; change: number; changePercent: number }[] = []
     const goldDb = dbMetals.find(m => m.metal === 'GOLD')
     const silverDb = dbMetals.find(m => m.metal === 'SILVER')
 

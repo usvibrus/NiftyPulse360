@@ -24,8 +24,10 @@ async function fetchPrices(): Promise<TickerData[]> {
   try {
     const res = await fetch('/api/prices')
     if (!res.ok) return []
-    const data = await res.json()
-    return data.map((q: any) => ({
+    const data: unknown = await res.json()
+    // /api/prices returns an array; anything else (e.g. an error object) would crash .map()
+    if (!Array.isArray(data)) return []
+    return data.map((q: { symbol: string; price?: number; change?: number; changePercent?: number }) => ({
       symbol: q.symbol,
       label: LABELS[q.symbol] || q.symbol,
       price: q.price || 0,
